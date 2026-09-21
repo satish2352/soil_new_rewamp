@@ -21,6 +21,32 @@ export default {
         line: 'rgb(var(--c-line) / <alpha-value>)',
         surface: 'rgb(var(--c-surface) / <alpha-value>)',
       },
+      /*
+        Tailwind only emits an opacity modifier (`bg-primary/8`) when the value
+        exists in this scale — anything else is dropped silently, leaving the
+        element unstyled. These are the fine-grained tints the design uses for
+        washes, blobs and translucent bars; without them those surfaces render
+        fully transparent.
+      */
+      opacity: {
+        4: '0.04',
+        6: '0.06',
+        7: '0.07',
+        8: '0.08',
+        12: '0.12',
+        15: '0.15',
+        18: '0.18',
+        35: '0.35',
+        45: '0.45',
+        55: '0.55',
+        65: '0.65',
+        85: '0.85',
+        88: '0.88',
+        92: '0.92',
+        96: '0.96',
+        97: '0.97',
+      },
+
       fontFamily: {
         // Fraunces carries the display weight; Plus Jakarta handles body copy and
         // keeps Devanagari readable through the Noto fallback.

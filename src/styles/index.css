@@ -203,8 +203,13 @@
     --c-bg: 22 61 41; /* #163D29 */
     --c-surface: 27 72 48; /* #1B4830 elevated card on the band */
     --c-text: 232 242 229; /* #E8F2E5 */
-    --c-muted: 166 192 165; /* #A6C0A5 — 5.4:1 on the band */
+    --c-muted: 166 192 165; /* #A6C0A5 — 6.1:1 on the band */
     --c-line: 52 88 63; /* #345840 */
+    /* The brand green has no contrast against its own dark band, so within it
+       the accent takes over as the "primary" tint. Remapping the *token* rather
+       than the `.text-primary` utility is what lets a nested light card restore
+       the original simply by redeclaring the token. */
+    --c-primary: 214 168 58;
 
     background-color: rgb(var(--c-bg));
     color: rgb(var(--c-text));
@@ -225,13 +230,26 @@
     @apply bg-sun/50;
   }
 
-  /* text-deep would vanish against the band; remap it to the light end. */
-  .band-dark .text-deep {
+  /*
+    A light island inside a dark band — product cards, whose packshots need a
+    pale backdrop. Declared after `.band-dark` so its heading rule wins the
+    specificity tie.
+  */
+  .band-light {
+    --c-bg: 216 232 211;
+    --c-surface: 240 248 238;
+    --c-text: 26 40 30;
+    --c-muted: 74 94 78;
+    --c-line: 176 203 170;
+    --c-primary: 36 92 58;
+
     color: rgb(var(--c-text));
   }
 
-  .band-dark .text-primary {
-    @apply text-sun;
+  .band-light h2,
+  .band-light h3,
+  .band-light h4 {
+    color: rgb(var(--c-text));
   }
 
   /* The primary button loses its figure/ground on a deep band — use the accent.

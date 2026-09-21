@@ -39,6 +39,11 @@ function fromApi(row) {
   };
 }
 
+/**
+ * Product card. Carries `band-light` so it keeps the light palette even when the
+ * section around it is a deep-green band — the packshots are transparent PNGs
+ * that need a pale backdrop to read.
+ */
 export function ProductCard({ product, index = 0, showDescription = true }) {
   const { t } = useI18n();
 
@@ -46,8 +51,8 @@ export function ProductCard({ product, index = 0, showDescription = true }) {
     <Reveal
       as="article"
       delay={Math.min(index, 7) * 0.06}
-      className="group relative flex flex-col overflow-hidden rounded-[1.5rem] border border-line/70
-                 bg-surface shadow-soft transition-all duration-500 ease-organic
+      className="band-light group relative flex flex-col overflow-hidden rounded-[1.5rem]
+                 border border-line/70 bg-surface shadow-soft transition-all duration-500 ease-organic
                  hover:-translate-y-2 hover:border-primary/25 hover:shadow-lift"
     >
       <Link

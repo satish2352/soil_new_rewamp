@@ -13,7 +13,8 @@
     "qa:shots": "node scripts/qa.mjs http://127.0.0.1:5180 --shots",
     "qa:a11y": "node scripts/a11y-check.mjs",
     "qa:screens": "node scripts/screenshots.mjs",
-    "qa:contrast": "node scripts/contrast.mjs"
+    "qa:contrast": "node scripts/contrast.mjs",
+    "qa:utils": "node scripts/check-utilities.mjs"
   },
   "dependencies": {
     "framer-motion": "^11.15.0",

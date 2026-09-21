@@ -27,6 +27,7 @@ npm run qa         # headless sweep: 14 routes × 9 breakpoints, layout + a11y
 npm run qa:shots   # same, writing screenshots to qa-shots/
 npm run qa:a11y    # reduced motion, keyboard tab order, Escape handling
 npm run qa:contrast # samples rendered text/background pairs against WCAG AA
+npm run qa:utils   # finds Tailwind classes the build silently dropped
 npm run qa:screens # targeted screenshots of each key view
 ```
 
@@ -105,22 +106,45 @@ Tokens live in `src/styles/index.css` as CSS variables and are surfaced through
 `tailwind.config.js`. Changing the nine `--c-*` values recolours the whole site.
 
 ```
---c-primary  #245C3A   deep forest green   --c-bg       #EEF5EC  green ground
---c-deep     #163D29   dark bands          --c-cream    #DDEADA  alternating band
---c-leaf     #6E9F45   natural leaf        --c-surface  #F8FCF7  cards
+--c-primary  #245C3A   deep forest green   --c-bg       #D8E8D3  green ground
+--c-deep     #163D29   dark bands          --c-cream    #C5DCBE  alternating band
+--c-leaf     #6E9F45   natural leaf        --c-surface  #F0F8EE  cards
 --c-earth    #8A5A3B                       --c-accent   #D6A83A  sunlight
 --c-soil     #5A3E2B                       --c-text     #1A281E
 ```
 
-The page sits on a **green-tinted ground** rather than a neutral off-white, so
-the identity colour carries through every section instead of only the dark
-bands. Three surface depths give the rhythm: `bg` (ground) → `cream`
-(alternating band) → `surface` (cards lifted off both). Products and Stats form
-one deep-green block mid-page — `<Products tone="dark" />` — so the page is
-anchored rather than uniformly pale.
+**There is no white or grey anywhere.** The light half of the page runs on two
+green tones (`#D8E8D3` ground, `#C5DCBE` band) with cards a step lighter; the
+dark half is deep forest green. The homepage alternates 7 dark / 7 light.
 
-All text pairings clear WCAG AA; `npm run qa:contrast` re-checks it against the
-rendered page after any palette change.
+### Bands
+
+A section becomes deep green by adding one class:
+
+```jsx
+<section className="band-dark section">…</section>
+```
+
+`.band-dark` does not restyle its children — it **redefines the surface tokens**
+for its subtree (`--c-bg`, `--c-surface`, `--c-text`, `--c-muted`, `--c-line`,
+and `--c-primary` → the accent). Every `text-ink`, `text-muted`, `border-line`,
+`bg-surface`, `.card` and `.field` inside then inverts on its own, and nothing
+in the section needs to know which band it is on.
+
+`.band-light` is the inverse, for a light island inside a dark band — product
+cards use it, because the packshots are transparent PNGs that need a pale
+backdrop. Because both work through tokens rather than utility overrides, they
+nest correctly.
+
+All text pairings clear WCAG AA on both bands; `npm run qa:contrast` re-checks
+against the rendered page after any palette change.
+
+> **Gotcha worth knowing:** Tailwind only emits an opacity modifier such as
+> `bg-primary/8` when that value exists in `theme.opacity`. Values outside the
+> default scale are dropped **silently** — the element just renders unstyled.
+> `tailwind.config.js` therefore extends the scale with every fractional value
+> the design uses, and `npm run qa:utils` fails the build-check if a new one
+> creeps in.
 
 Type: **Fraunces** for display, **Plus Jakarta Sans** for body, **Noto Sans
 Devanagari** as the Marathi/Hindi fallback. Sizes use a fluid `clamp()` ramp, so

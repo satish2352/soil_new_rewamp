@@ -56,7 +56,7 @@ export function SmartImage({
 
   return (
     <div
-      className={`relative overflow-hidden ${bare ? '' : 'bg-cream'} ${className}`}
+      className={`relative overflow-hidden ${bare ? '' : 'bg-[rgb(var(--c-surface))]'} ${className}`}
       style={{ aspectRatio: ratio }}
     >
       {status !== 'error' && (
@@ -76,7 +76,8 @@ export function SmartImage({
 
       {status !== 'ready' && !bare && (
         <div
-          className="absolute inset-0 grid place-items-center bg-gradient-to-br from-cream to-[rgb(var(--c-line))]"
+          className="absolute inset-0 grid place-items-center bg-gradient-to-br
+                     from-[rgb(var(--c-surface))] to-[rgb(var(--c-line))]"
           aria-hidden="true"
         >
           <Icon name="sprout" size={30} className="text-leaf/40" />
