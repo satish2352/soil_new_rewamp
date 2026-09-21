@@ -1,0 +1,414 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ tokens */
+@layer base {
+  :root {
+    /* Agriculture palette. Change these values to recolour the entire site. */
+    --c-primary: 36 92 58; /* #245C3A deep forest green */
+    --c-deep: 22 61 41; /* #163D29 */
+    --c-leaf: 110 159 69; /* #6E9F45 natural leaf */
+    --c-earth: 138 90 59; /* #8A5A3B */
+    --c-soil: 90 62 43; /* #5A3E2B */
+    --c-accent: 214 168 58; /* #D6A83A sunlight */
+    --c-text: 26 40 30; /* #1A281E */
+
+    /* Surfaces.
+       The page is green, not white-with-green-accents. Three depths carry the
+       light half — ground, band, card — and each is unmistakably green rather
+       than a tint. The dark half is handled by `.band-dark` further down. */
+    --c-bg: 216 232 211; /* #D8E8D3 green ground */
+    --c-cream: 197 220 190; /* #C5DCBE deeper alternating band */
+    --c-surface: 240 248 238; /* #F0F8EE cards, lifted clear of the ground */
+
+    --c-muted: 74 94 78; /* #4A5E4E — holds 4.5:1 on every light surface */
+    --c-line: 176 203 170; /* #B0CBAA */
+
+    --header-h: 4.5rem;
+  }
+
+  * {
+    border-color: rgb(var(--c-line));
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Anchor targets clear the sticky header. */
+    scroll-padding-top: calc(var(--header-h) + 1rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: rgb(var(--c-bg));
+    color: rgb(var(--c-text));
+    font-feature-settings: 'ss01', 'cv05';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Devanagari runs taller than Latin; give every line room so Marathi and
+       Hindi never clip against a fixed-height container. */
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Devanagari needs its looser leading back on headings too. */
+  :lang(mr) h1,
+  :lang(hi) h1,
+  :lang(mr) h2,
+  :lang(hi) h2,
+  :lang(mr) h3,
+  :lang(hi) h3 {
+    line-height: 1.35;
+    letter-spacing: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-primary));
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background: rgb(var(--c-accent) / 0.3);
+  }
+
+  img,
+  video,
+  iframe {
+    max-width: 100%;
+  }
+}
+
+/* -------------------------------------------------------------- components */
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-shell px-gutter;
+  }
+
+  .section {
+    @apply py-section;
+  }
+
+  /* Eyebrow above a section title. */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-fluid-xs font-semibold uppercase tracking-[0.18em] text-primary;
+  }
+
+  .eyebrow::before {
+    content: '';
+    @apply inline-block h-px w-8 bg-primary/50;
+  }
+
+  /* Same eyebrow, inverted for deep-green bands. */
+  .eyebrow-dark {
+    @apply text-sun;
+  }
+
+  .eyebrow-dark::before {
+    @apply bg-sun/50;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-fluid-sm font-semibold
+           transition-all duration-300 ease-organic min-h-[44px] text-center;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-cream shadow-soft hover:bg-deep hover:shadow-lift
+           hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .btn-accent {
+    @apply btn bg-sun text-deep shadow-soft hover:brightness-105
+           hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0;
+  }
+
+  .btn-ghost {
+    @apply btn border border-line bg-transparent text-ink hover:border-primary hover:bg-primary/5;
+  }
+
+  /* Desktop nav item. Colour is inherited from the header so the same markup
+     works over the transparent hero and against the solid scrolled bar. */
+  .nav-link {
+    @apply relative rounded-full px-3.5 py-2 text-fluid-sm font-medium transition-colors duration-300;
+  }
+
+  .nav-link::after {
+    content: '';
+    @apply absolute inset-x-3.5 bottom-1 h-px origin-left scale-x-0 bg-current
+           transition-transform duration-300 ease-organic;
+  }
+
+  .nav-link:hover::after,
+  .nav-link.is-active::after {
+    @apply scale-x-100;
+  }
+
+  .nav-link.is-active {
+    @apply font-semibold;
+  }
+
+  .card {
+    @apply relative rounded-[1.5rem] border border-line/70 bg-surface shadow-soft
+           transition-all duration-500 ease-organic;
+  }
+
+  .card-hover {
+    @apply hover:-translate-y-1.5 hover:shadow-lift hover:border-primary/25;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-line bg-surface px-4 py-3 text-fluid-sm text-ink
+           placeholder:text-muted/70 transition-colors duration-200
+           focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20
+           min-h-[46px];
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-fluid-sm font-semibold text-ink;
+  }
+
+  .field-error {
+    @apply mt-1 block text-fluid-xs font-medium text-[#B4442E];
+  }
+
+  /* Hides content visually but keeps it for screen readers. */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    @apply sr-only;
+  }
+
+  /*
+    Deep-green section band.
+
+    Rather than restyling every child, this redefines the surface tokens for its
+    subtree — so `text-ink`, `text-muted`, `border-line`, `bg-surface` and the
+    .card / .field component classes all invert on their own. Any section can be
+    flipped dark by adding this one class, and nothing inside needs to know.
+  */
+  .band-dark {
+    --c-bg: 22 61 41; /* #163D29 */
+    --c-surface: 27 72 48; /* #1B4830 elevated card on the band */
+    --c-text: 232 242 229; /* #E8F2E5 */
+    --c-muted: 166 192 165; /* #A6C0A5 — 5.4:1 on the band */
+    --c-line: 52 88 63; /* #345840 */
+
+    background-color: rgb(var(--c-bg));
+    color: rgb(var(--c-text));
+  }
+
+  /* Headings and the eyebrow rule invert with the band. */
+  .band-dark h2,
+  .band-dark h3,
+  .band-dark h4 {
+    color: rgb(var(--c-text));
+  }
+
+  .band-dark .eyebrow {
+    @apply text-sun;
+  }
+
+  .band-dark .eyebrow::before {
+    @apply bg-sun/50;
+  }
+
+  /* text-deep would vanish against the band; remap it to the light end. */
+  .band-dark .text-deep {
+    color: rgb(var(--c-text));
+  }
+
+  .band-dark .text-primary {
+    @apply text-sun;
+  }
+
+  /* The primary button loses its figure/ground on a deep band — use the accent.
+     Colours are written literally here: `@apply text-deep` would be circular,
+     since `.text-deep` is itself remapped just above. */
+  .band-dark .btn-primary {
+    background-color: rgb(var(--c-accent));
+    color: rgb(var(--c-deep));
+  }
+
+  .band-dark .btn-primary:hover {
+    background-color: rgb(var(--c-accent));
+    filter: brightness(1.05);
+  }
+
+  .band-dark .btn-ghost {
+    border-color: rgb(var(--c-cream) / 0.3);
+    color: rgb(var(--c-cream));
+  }
+
+  .band-dark .btn-ghost:hover {
+    border-color: rgb(var(--c-accent));
+    background-color: rgb(var(--c-cream) / 0.1);
+    color: rgb(var(--c-accent));
+  }
+}
+
+/* ---------------------------------------------------------------- utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Prevents long Devanagari compounds and URLs from forcing a horizontal scroll. */
+  .wrap-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Wrapper for a clip-based text reveal.
+     An `overflow: hidden` box sized to the line box cuts descenders (g, y, p)
+     and the tops of Devanagari matras. The padding gives them room and the
+     negative margin keeps the visual metrics unchanged. */
+  .reveal-clip {
+    overflow: hidden;
+    padding-block: 0.22em;
+    margin-block: -0.22em;
+  }
+
+  /* Soft organic blob used behind hero and feature sections. */
+  .blob {
+    border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+  }
+
+  .grain {
+    background-image: radial-gradient(
+      rgb(var(--c-soil) / 0.035) 1px,
+      transparent 1px
+    );
+    background-size: 3px 3px;
+  }
+}
+
+/* ------------------------------------------------- CMS rich text from the API */
+.rich {
+  @apply text-fluid-base leading-[1.85] text-ink/90;
+}
+.rich > * + * {
+  margin-top: 1.05em;
+}
+.rich p {
+  @apply wrap-anywhere;
+}
+.rich strong,
+.rich b {
+  @apply font-semibold text-ink;
+}
+.rich h1,
+.rich h2,
+.rich h3,
+.rich h4 {
+  @apply mt-[1.6em] font-display text-fluid-xl text-deep;
+}
+.rich ul,
+.rich ol {
+  @apply my-4 space-y-2 pl-5;
+}
+.rich ul {
+  list-style: disc;
+}
+.rich ol {
+  list-style: decimal;
+}
+.rich li::marker {
+  color: rgb(var(--c-leaf));
+}
+.rich a {
+  @apply font-medium text-primary underline underline-offset-2 hover:text-deep;
+}
+.rich img {
+  @apply my-6 h-auto w-full rounded-2xl;
+}
+.rich table {
+  @apply my-6 w-full border-collapse text-fluid-sm;
+  display: block;
+  overflow-x: auto;
+}
+.rich td,
+.rich th {
+  @apply border border-line px-3 py-2 align-top;
+}
+.rich blockquote {
+  @apply border-l-4 border-leaf/60 bg-cream/60 py-2 pl-5 italic;
+}
+
+/* ----------------------------------------------------- reduced motion policy */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  /* Kill parallax, drift and transform-based reveals; keep opacity so nothing
+     is left invisible if a reveal never fires. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .parallax-layer {
+    transform: none !important;
+  }
+}
+
+/* --------------------------------------------------------- Google Translate
+   The widget injects a toolbar, a tooltip layer and a popup container. Left
+   alone the toolbar shifts the document down (breaking the sticky header) and
+   the 1000px-wide popup container forces a horizontal scrollbar on mobile.
+   These rules neutralise the chrome while leaving the translation working. */
+body {
+  top: 0 !important;
+  position: static !important;
+}
+
+.skiptranslate iframe,
+iframe.skiptranslate,
+.goog-te-banner-frame {
+  display: none !important;
+}
+
+#google_translate_element {
+  display: none;
+}
+
+/* The floating popup / tooltip containers Google appends to <body>. */
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9od-aZ2wEe-OiiCO,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-tooltip,
+.goog-text-highlight {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  background: none !important;
+}

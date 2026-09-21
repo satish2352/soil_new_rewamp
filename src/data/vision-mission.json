@@ -1,0 +1,20 @@
+{
+  "vision": {
+    "title": "Vision",
+    "points": [
+      "Prosperous and Permanent farmings",
+      "Production of 100% nutritious and non-toxic agricultural goods.",
+      "Inheritance of fertile soil and pure water for the next generation.",
+      "Sustainable and prosperous agriculture with quality and quantity."
+    ],
+    "image": "https://finalapi.soilchargertechnology.com/public/uploads/web/gallaryphoto/8_gallaryphoto.jpg"
+  },
+  "mission": {
+    "title": "Mission",
+    "points": [
+      "We want to make India truly agricultural and bring in a farmers' state",
+      "We want to encourage the youth to cultivate with joy and to encourage youth to think positively about agriculture."
+    ],
+    "image": "https://finalapi.soilchargertechnology.com/public/uploads/web/gallaryphoto/9_gallaryphoto.PNG"
+  }
+}

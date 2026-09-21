@@ -1,0 +1,32 @@
+{
+  "name": "soil-charger-technology",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Soil Charger Technology \u2014 2026 website revamp",
+  "scripts": {
+    "dev": "vite --port 5180 --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --port 5180",
+    "extract": "node scripts/extract-content.mjs",
+    "qa": "node scripts/qa.mjs http://127.0.0.1:5180",
+    "qa:shots": "node scripts/qa.mjs http://127.0.0.1:5180 --shots",
+    "qa:a11y": "node scripts/a11y-check.mjs",
+    "qa:screens": "node scripts/screenshots.mjs",
+    "qa:contrast": "node scripts/contrast.mjs"
+  },
+  "dependencies": {
+    "framer-motion": "^11.15.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "puppeteer-core": "^23.11.1",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.4.11"
+  }
+}
