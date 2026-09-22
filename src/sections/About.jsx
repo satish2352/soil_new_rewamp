@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
-import about from '../data/about.json';
+import staticAbout from '../data/about.json';
+import { getAboutUs } from '../lib/api';
+import { useApiData } from '../hooks';
+import { cleanCmsHtml } from '../lib/cms-html';
 import { useI18n } from '../lib/i18n';
 import { ImageReveal, Reveal, motion, useParallax } from '../lib/motion';
 import { RichText, SmartImage } from '../components/ui';
@@ -19,9 +22,24 @@ const MILESTONES = [
   { year: 'Today', text: 'Vedic technology has been born through the teachings of SCT and Vedic.' },
 ];
 
+/** Normalises the /frontaboutuslist row into the shape this section renders. */
+function mapAbout(row) {
+  if (!row) return null;
+  return {
+    name: String(row.title || '').trim(),
+    role: staticAbout.role,
+    location: staticAbout.location,
+    image: row.photopath || null,
+    html: cleanCmsHtml(row.content),
+  };
+}
+
 export default function About({ compact = false }) {
   const { t } = useI18n();
   const { ref, y } = useParallax(36);
+
+  // Live founder story, with the extracted snapshot as the offline fallback.
+  const { data: about } = useApiData(getAboutUs, staticAbout, mapAbout);
 
   return (
     <section className="section relative overflow-hidden" aria-labelledby="about-title" ref={ref}>

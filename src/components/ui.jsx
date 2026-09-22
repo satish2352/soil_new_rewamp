@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Reveal, TextReveal } from '../lib/motion';
+import { imageChain } from '../lib/images';
 import { useI18n } from '../lib/i18n';
 import Icon from './Icon';
 
@@ -51,23 +52,47 @@ export function SmartImage({
   fallback = 'placeholder',
   ...rest
 }) {
-  const [status, setStatus] = useState(src ? 'loading' : 'error');
+  /*
+    Candidate urls to try, in order, from lib/images: by default the live API
+    url first and the local mirror only as a fallback. `VITE_IMAGE_SOURCE`
+    changes that policy in one place; see lib/images.js.
+  */
+  const chain = useMemo(() => imageChain(src), [src]);
+  const [step, setStep] = useState(0);
+  const [status, setStatus] = useState(chain.length ? 'loading' : 'error');
   const bare = fallback === 'none';
+  const source = chain[step] || null;
+
+  // A new `src` (filter change, carousel step) restarts the chain.
+  useEffect(() => {
+    setStep(0);
+    setStatus(chain.length ? 'loading' : 'error');
+  }, [chain]);
+
+  const handleError = () => {
+    // Try the next candidate; the placeholder is only for when all of them fail.
+    if (step + 1 < chain.length) {
+      setStep(step + 1);
+      setStatus('loading');
+      return;
+    }
+    setStatus('error');
+  };
 
   return (
     <div
       className={`relative overflow-hidden ${bare ? '' : 'bg-[rgb(var(--c-surface))]'} ${className}`}
       style={{ aspectRatio: ratio }}
     >
-      {status !== 'error' && (
+      {status !== 'error' && source && (
         <img
-          src={src}
+          src={source}
           alt={alt}
           loading={loading}
           decoding="async"
           sizes={sizes}
           onLoad={() => setStatus('ready')}
-          onError={() => setStatus('error')}
+          onError={handleError}
           className={`h-full w-full object-cover transition-opacity duration-700
                       ${status === 'ready' ? 'opacity-100' : 'opacity-0'} ${imgClassName}`}
           {...rest}
@@ -159,10 +184,18 @@ export function Blob({ className = '', style }) {
   );
 }
 
-/** Renders CMS HTML from the existing API inside the .rich type scale. */
-export function RichText({ html, className = '' }) {
+/**
+ * Renders CMS HTML from the existing API inside the .rich type scale.
+ * `lang` matters: the stylesheet justifies Latin copy but leaves Devanagari
+ * ragged-right, since browsers cannot hyphenate it.
+ */
+export function RichText({ html, className = '', lang }) {
   if (!html) return null;
   return (
-    <div className={`rich ${className}`} dangerouslySetInnerHTML={{ __html: html }} />
+    <div
+      className={`rich ${className}`}
+      lang={lang}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }

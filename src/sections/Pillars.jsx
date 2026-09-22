@@ -4,9 +4,14 @@ import { Reveal, motion } from '../lib/motion';
 import { SectionHeading } from '../components/ui';
 
 /**
- * The four pillars. Statements and icons are exactly the ones on the live site;
- * the presentation becomes numbered cards linked by a growing rule so the set
- * reads as one philosophy rather than four loose tiles.
+ * The four pillars. The statements are exactly the ones on the live site; the
+ * presentation becomes numbered cards linked by a growing rule so the set reads
+ * as one philosophy rather than four loose tiles.
+ *
+ * No icon art: the four images the rebuild had been pairing these with were
+ * unrelated stock clip-art (a dry-fruit basket for "nourishment", a watermarked
+ * stock tree for "leaf and roots"), served from nothing the CMS knows about.
+ * The number carries the medallion instead.
  */
 export default function Pillars() {
   const { t } = useI18n();
@@ -48,26 +53,16 @@ export default function Pillars() {
                            transition-all duration-500 ease-organic hover:-translate-y-2
                            hover:border-primary/25 hover:shadow-lift"
               >
-                {/* Icon medallion straddles the connecting line. */}
+                {/* Numbered medallion straddles the connecting line. */}
                 <div
                   className="relative -mt-10 mb-5 grid h-[5.5rem] w-[5.5rem] place-items-center rounded-full
                              border border-line bg-canvas shadow-soft transition-transform duration-500
                              ease-organic group-hover:scale-105 group-hover:border-leaf/50"
                 >
-                  <img
-                    src={p.image}
-                    alt=""
-                    width="52"
-                    height="52"
-                    loading="lazy"
-                    decoding="async"
-                    className="h-12 w-12 object-contain transition-transform duration-500 ease-organic
-                               group-hover:-translate-y-0.5 group-hover:scale-110"
-                  />
                   <span
                     aria-hidden="true"
-                    className="absolute -right-1 -top-1 grid h-8 w-8 place-items-center rounded-full
-                               bg-primary font-display text-fluid-xs font-semibold text-cream shadow-soft"
+                    className="font-display text-fluid-2xl font-semibold text-primary transition-transform
+                               duration-500 ease-organic group-hover:scale-110"
                   >
                     {p.n}
                   </span>

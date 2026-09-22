@@ -24,9 +24,34 @@ async function parse(res) {
 }
 
 /**
- * The API returns 422 with `message` as a {field: text} map, and otherwise a
- * `{code, message, result}` envelope. Both shapes are normalised here.
+ * Normalises this API's two ways of reporting a failure.
+ *
+ * It does NOT reliably use HTTP status codes: a rejected request commonly comes
+ * back as **HTTP 200** carrying `{code: 400, message: "...", result: "false"}`.
+ * Verified against /districtlist, which answers 200 + code 400 for an unknown
+ * state id. Checking `res.ok` alone therefore reports failures as successes —
+ * which for a form means telling someone their application was submitted when
+ * it was not.
+ *
+ * So both are checked: the HTTP status *and* the envelope inside the body.
  */
+function isFailure(res, data) {
+  if (!res.ok) return true;
+  if (!data || typeof data !== 'object') return false;
+
+  // `result` is the envelope's own success flag, sent as a string or a boolean.
+  if (data.result === false || data.result === 'false') return true;
+
+  const code = Number(data.code);
+  return Number.isFinite(code) && code >= 400;
+}
+
+/** A field-error map means validation, whatever the status code says. */
+function isValidation(data) {
+  const code = Number(data?.code);
+  return code === 422 || (data?.message && typeof data.message === 'object');
+}
+
 async function request(path, { method = 'GET', body, signal } = {}) {
   let res;
   try {
@@ -38,16 +63,20 @@ async function request(path, { method = 'GET', body, signal } = {}) {
 
   const data = await parse(res);
 
-  if (res.status === 422) {
+  if (res.status === 422 || (isFailure(res, data) && isValidation(data))) {
     const msg = data?.message;
     throw new ValidationError(
       msg && typeof msg === 'object' ? msg : {},
       typeof msg === 'string' ? msg : 'Please check the highlighted fields.'
     );
   }
-  if (!res.ok) {
-    throw new Error(typeof data?.message === 'string' ? data.message : 'Something went wrong.');
+
+  if (isFailure(res, data)) {
+    throw new Error(
+      typeof data?.message === 'string' ? data.message : 'Something went wrong.'
+    );
   }
+
   return data;
 }
 
@@ -87,8 +116,11 @@ const locationList = (path, payload, signal) =>
   request(path, { method: 'POST', body: form(payload), signal })
     .then((r) => r.data || [])
     .catch((err) => {
-      // The API answers 400 "…Not Found" for states with no children; that is
-      // an empty list, not a failure the user needs to see.
+      if (err?.name === 'AbortError') throw err;
+      // "…List Not Found" is how this API reports an empty level (a state with
+      // no districts loaded). That is an empty dropdown, not a user-facing
+      // failure — anything else propagates.
+      if (/not found/i.test(err?.message || '')) return [];
       if (err instanceof ValidationError) throw err;
       return [];
     });

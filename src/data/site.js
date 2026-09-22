@@ -104,12 +104,12 @@ export const nav = [
   { key: 'contact', to: '/contact' },
 ];
 
-/** The four pillar statements, verbatim, with the icons the live site pairs them with. */
+/** The four pillar statements, verbatim. Rendered as numbered cards, no art. */
 export const pillars = [
-  { n: '01', text: 'Work on nourishment not on disease.', image: '/img/pillars/nourishment.png' },
-  { n: '02', text: 'Work on soil not on climate.', image: '/img/pillars/soil.png' },
-  { n: '03', text: 'Work on humus not with other things.', image: '/img/pillars/humus.png' },
-  { n: '04', text: 'Work on leaf and roots not on fruits', image: '/img/pillars/leaf-roots.png' },
+  { n: '01', text: 'Work on nourishment not on disease.' },
+  { n: '02', text: 'Work on soil not on climate.' },
+  { n: '03', text: 'Work on humus not with other things.' },
+  { n: '04', text: 'Work on leaf and roots not on fruits' },
 ];
 
 /**

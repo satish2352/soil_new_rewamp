@@ -1,14 +1,26 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import slides from '../data/slides.json';
+import staticSlides from '../data/slides.json';
+import { getSlides } from '../lib/api';
+import { useApiData } from '../hooks';
 import { hero, stats } from '../data/site';
 import { useI18n } from '../lib/i18n';
 import { EASE, useParallax } from '../lib/motion';
 import { SmartImage } from '../components/ui';
+import { hasLocalCopy } from '../lib/images';
 import Icon from '../components/Icon';
 
 const ROTATE_MS = 6500;
+
+/** Keeps only slides whose image the mirror or the server can actually serve. */
+function mapSlides(rows) {
+  const usable = (rows || [])
+    .filter((r) => r.photo_one && r.photopath && !r.photopath.endsWith('/'))
+    .map((r) => ({ id: r.id, image: r.photopath }))
+    .filter((s) => hasLocalCopy(s.image));
+  return usable.length ? usable : null;
+}
 
 /**
  * Hero. Keeps the existing headline, sub-line and Shop Now CTA, and reuses the
@@ -21,7 +33,9 @@ export default function Hero({ onCta }) {
   const [index, setIndex] = useState(0);
   const { ref, y } = useParallax(50);
 
-  const images = slides.length ? slides : [];
+  // Live cover slides; the API already filters records with no photo.
+  const { data: slides } = useApiData(getSlides, staticSlides, mapSlides);
+  const images = slides?.length ? slides : [];
 
   useEffect(() => {
     if (images.length < 2) return;

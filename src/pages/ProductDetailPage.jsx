@@ -4,6 +4,7 @@ import staticProducts from '../data/products.json';
 import { getProducts } from '../lib/api';
 import { useAsync } from '../hooks';
 import { useI18n } from '../lib/i18n';
+import { cleanCmsHtml } from '../lib/cms-html';
 import { ImageReveal, Reveal } from '../lib/motion';
 import Seo from '../components/Seo';
 import PageHero from '../components/PageHero';
@@ -25,8 +26,8 @@ function fromApi(row) {
     id: row.id,
     name: String(row.title || '').trim().replace(/\s+/g, ' '),
     shortDescription: row.short_description || '',
-    longDescription: row.long_description || '',
-    additionalInfo: row.additional_info || '',
+    longDescription: cleanCmsHtml(row.long_description),
+    additionalInfo: cleanCmsHtml(row.additional_info),
     image: row.productphotopath || null,
     altImage: row.photopath || null,
     review:

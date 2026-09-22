@@ -193,6 +193,10 @@ console.log('Extracting from', CRAWL, '\n');
       body = balanceTags(body);
       body = body.replace(/<p>\s*(?:&nbsp;|\s)*<\/p>/gi, '').trim();
       body = balanceTags(body).trim();
+      // Several articles open with a bare text node before the first <p>; with
+      // no element of its own it collided with the paragraph below it. Promote
+      // it to a lead paragraph so the type scale and spacing apply.
+      body = body.replace(/^([^<]{20,}?)(?=\s*<)/, '<p class="lead">$1</p>');
     }
 
     // Fall back to the listing card when a detail page is unavailable.
@@ -266,12 +270,22 @@ console.log('Extracting from', CRAWL, '\n');
   });
 
   const vm = readJSON('p_frontvisionmissionlist.json').data;
+
+  /*
+    Both panels keep whatever `photopath` the CMS returns, even though these two
+    files (8_gallaryphoto.jpg, 9_gallaryphoto.PNG) are currently 404 and were
+    never archived, so they cannot be mirrored. Showing an unrelated gallery
+    photo in their place would put a picture on the page that is not the one the
+    CMS is pointing at; a panel with no image is honest, and it corrects itself
+    the moment the upload is restored.
+  */
   const pick = (kind) => {
     const r = vm.find((x) => (x.record_for || '').toLowerCase() === kind);
     if (!r) return null;
     const points = [...String(r.content).matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) => toText(m[1]));
     return { title: decode(r.title), points, image: r.photopath || null };
   };
+
   write('vision-mission.json', { vision: pick('vision'), mission: pick('mission') });
 }
 
@@ -305,9 +319,21 @@ console.log('Extracting from', CRAWL, '\n');
   const rows = readJSON('q_frontsliderlist.json').data;
   // Records whose photo_one is null render as blank slides on the live site.
   const usable = rows.filter((r) => r.photo_one && r.photopath && !r.photopath.endsWith('/'));
+
+  // One cover was uploaded after the archive's last capture, so there is no
+  // recoverable file for it — it would render as an empty frame in the
+  // carousel. Keep only slides whose image the mirror actually holds.
+  let mirrored = {};
+  try {
+    mirrored = JSON.parse(fs.readFileSync(path.join(OUT, 'image-manifest.json'), 'utf8'));
+  } catch {
+    /* mirror not built yet — keep every slide */
+  }
+  const hasMirror = (url) => !Object.keys(mirrored).length || Boolean(mirrored[url]);
+
   write(
     'slides.json',
-    usable.map((r) => ({ id: r.id, image: r.photopath }))
+    usable.filter((r) => hasMirror(r.photopath)).map((r) => ({ id: r.id, image: r.photopath }))
   );
 }
 

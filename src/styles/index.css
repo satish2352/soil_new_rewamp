@@ -324,6 +324,67 @@
 /* ------------------------------------------------- CMS rich text from the API */
 .rich {
   @apply text-fluid-base leading-[1.85] text-ink/90;
+
+  /*
+    Measure. Long-form body copy reads best at roughly 50-75 characters per
+    line; unconstrained, this article body ran to 87.
+
+    Calibrated, not guessed: `ch` is the width of the "0" glyph, which in Plus
+    Jakarta Sans is far wider than the average character (0.73em vs ~0.53em),
+    so a naive 68ch resolved to 868px and still gave 87 characters per line.
+    50ch lands at ~68.
+  */
+  max-width: 50ch;
+
+  /*
+    Justification. Flush-both edges only look right when the browser may also
+    break words — without hyphenation the spaces stretch into rivers. Latin
+    copy gets both; see the Devanagari override below.
+  */
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+/*
+  Devanagari has no hyphenation dictionary in browsers, so justifying Marathi
+  and Hindi would stretch word spacing with no way to break a long compound.
+  Those articles stay ragged-right, which is the correct setting for the script.
+*/
+.rich:lang(mr),
+.rich:lang(hi),
+.rich [lang='mr'],
+.rich [lang='hi'] {
+  text-align: start;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+
+/* A short final line looks like a mistake when the rest is flush both sides. */
+.rich p {
+  text-align-last: start;
+}
+
+/* Opening standfirst, promoted from the bare text node the CMS leaves loose. */
+.rich p.lead {
+  @apply text-fluid-lg font-medium text-ink;
+  text-align: start;
+  hyphens: manual;
+  margin-bottom: 1.4em;
+  padding-left: 1rem;
+  border-left: 3px solid rgb(var(--c-leaf) / 0.55);
+}
+
+/* Elements that must not be justified regardless. */
+.rich h1,
+.rich h2,
+.rich h3,
+.rich h4,
+.rich figcaption,
+.rich blockquote {
+  text-align: start;
+  hyphens: manual;
 }
 .rich > * + * {
   margin-top: 1.05em;

@@ -63,7 +63,7 @@ export default function BlogDetailPage() {
             <Loading rows={7} />
           ) : (
             <Reveal>
-              <RichText html={body} className="max-w-none" />
+              <RichText html={body} className="mx-auto" lang={post.language} />
             </Reveal>
           )}
 

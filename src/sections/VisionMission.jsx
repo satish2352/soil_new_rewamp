@@ -1,4 +1,6 @@
-import vm from '../data/vision-mission.json';
+import staticVm from '../data/vision-mission.json';
+import { getVisionMission } from '../lib/api';
+import { useApiData } from '../hooks';
 import { useI18n } from '../lib/i18n';
 import { ImageReveal, Reveal } from '../lib/motion';
 import { SmartImage } from '../components/ui';
@@ -65,8 +67,37 @@ function Panel({ data, tone, icon, delay, label }) {
   );
 }
 
+/**
+ * The API returns both records in one list keyed by `record_for`; the bullets
+ * live as <li> inside an HTML blob.
+ */
+function mapVisionMission(rows) {
+  const pick = (kind) => {
+    const r = (rows || []).find(
+      (x) => String(x.record_for || '').toLowerCase() === kind
+    );
+    if (!r) return null;
+    const points = [...String(r.content || '').matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) =>
+      m[1].replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+    );
+    if (!points.length) return null;
+    return {
+      title: r.title || staticVm[kind]?.title,
+      points,
+      image: r.photopath || null,
+    };
+  };
+
+  const vision = pick('vision');
+  const mission = pick('mission');
+  return vision || mission ? { vision, mission } : null;
+}
+
 export default function VisionMission() {
   const { t } = useI18n();
+
+  // Live vision/mission, falling back to the extracted snapshot.
+  const { data: vm } = useApiData(getVisionMission, staticVm, mapVisionMission);
 
   return (
     <section className="band-dark section relative overflow-hidden" aria-labelledby="vm-title">

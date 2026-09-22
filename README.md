@@ -28,6 +28,9 @@ npm run qa:shots   # same, writing screenshots to qa-shots/
 npm run qa:a11y    # reduced motion, keyboard tab order, Escape handling
 npm run qa:contrast # samples rendered text/background pairs against WCAG AA
 npm run qa:utils   # finds Tailwind classes the build silently dropped
+npm run qa:api     # end-to-end API check (never POSTs to write endpoints)
+npm run restore-images  # re-mirror CMS images from the Internet Archive
+npm run prune-mirror    # drop local copies the API serves again (--apply to delete)
 npm run qa:screens # targeted screenshots of each key view
 ```
 
@@ -35,27 +38,77 @@ npm run qa:screens # targeted screenshots of each key view
 
 ---
 
-## ⚠ Known blocker: the CMS images are 404 at source
+## CMS images — recovered
 
-**Every image uploaded through the CMS currently returns HTTP 404** —
-product photos, blog images, gallery photos, testimonial portraits, hero covers
-and the founder portrait.
+**Every image uploaded through the CMS returns HTTP 404 on the client's server**
+— products, blogs, gallery, testimonials, hero covers, the founder portrait.
+This is not a regression here: loading the *live production site* headless shows
+44 of 44 product images failing.
 
-This is not a regression in the rebuild. Loading the *live production site* in a
-headless browser shows **44 of 44** product images failing on `/products`, while
-the 12 static files under `soilchargertechnology.com/public/img/` load normally.
-Something has moved or been removed under
-`finalapi.soilchargertechnology.com/public/uploads/web/`.
+**69 of them were recovered from the Internet Archive** and are mirrored into
+`public/img/cms/`, preserving the CMS folder layout:
 
-How the rebuild handles it:
+| folder | recovered |
+|---|---|
+| product | 21 / 21 |
+| blog | 21 / 21 |
+| gallaryphoto | 20 / 20 |
+| coverphoto | 4 |
+| testimonials | 2 / 2 |
+| aboutus | 1 / 1 |
 
-- the original URLs are kept everywhere, so images return automatically once the
-  server is fixed — no code change needed;
-- a failed image degrades to a soil-toned placeholder, never a broken icon;
-- the hero falls back to a CSS-drawn soil-and-field backdrop rather than a stock
-  photo, so nothing on the page implies a claim about a real SCT farm.
+`npm run restore-images` re-runs the recovery and rewrites
+`src/data/image-manifest.json`, which maps each live CMS url to its local file.
 
-**This needs fixing on the server before launch.**
+### Where images load from
+
+Set `VITE_IMAGE_SOURCE` in `.env`. `SmartImage` walks the resulting candidate
+list, moving to the next only when one fails, and draws the placeholder only if
+all of them do.
+
+| mode | order | images on /products | failed requests |
+|---|---|---|---|
+| `api-first` **(default)** | API → mirror | 25 / 25 | 21 |
+| `api` | API only | **4 / 25** | 21 |
+| `mirror-first` | mirror → API | 25 / 25 | **0** |
+
+`api-first` is the default because the API is the system of record: the app
+always asks it first, so the day the uploads are restored the live files take
+over on their own and `public/img/cms/` can simply be deleted — no code change.
+
+`api` is the "no local files at all" mode. It is measured above rather than
+described: with the uploads still 404ing it leaves 21 of 25 images blank on the
+products page, and every product, blog, gallery, testimonial and founder image
+empty site-wide. It becomes the right setting once the server is fixed.
+
+`mirror-first` is the fastest today — it avoids ~21 failed requests per page —
+at the cost of not noticing when the server comes back.
+
+### Four files could not be recovered
+
+No substitute image is shown for any of them. Nothing on the page is a picture
+other than the one the CMS points at — a missing image degrades to the
+soil-toned placeholder, and corrects itself the moment the upload is restored.
+
+| file | used by | handling |
+|---|---|---|
+| `8_gallaryphoto.jpg` | Vision panel | keeps the live CMS url; placeholder until the server serves it |
+| `9_gallaryphoto.PNG` | Mission panel | same |
+| `10122024075152137_coverphoto.png` | one hero slide | uploaded after the archive's last capture; slide dropped so the carousel has no blank frame |
+| `66_photo.png` | product alt image | the `frontproduct` folder has no archive captures; falls through to the placeholder |
+
+### Retiring the mirror
+
+The mirror is a stopgap, and `npm run prune-mirror` is how it gets retired
+rather than left to rot. It asks the server for all 69 mirrored urls and deletes
+the local copy of every one the server is serving again, so a file never exists
+in two places once the API can supply it; `--apply` performs the deletion, the
+bare command only reports. When the manifest empties, `public/img/cms/` is gone
+and the app is back on the API alone with no code change.
+
+Run today it removes nothing: **0 of 69 are served, all 69 still 404.**
+
+**The server should still be fixed** — the mirror is a stopgap, not the fix.
 
 ---
 
@@ -212,10 +265,29 @@ stop, Escape closing the mobile menu, every `aria-labelledby` resolving to a rea
 element, WCAG AA contrast on all sampled text, and the live product API returning
 all 21 products into the rendered grid.
 
-**Not tested:** the four form submissions. They are wired to the documented
-endpoints with the documented payloads, but submitting would write real records
-into the client's production database, so they need a staging endpoint or the
-client's go-ahead before an end-to-end test.
+### API integration
+
+`npm run qa:api` verifies four things and passes on all of them:
+
+1. every read endpoint answers with the expected shape,
+2. the write endpoints are wired with the right payload field names —
+   **checked statically, never contacted**, because they write into the live
+   production database,
+3. each page actually issues the requests it depends on, and
+4. the live payload reaches the DOM (21 product names, the founder story, all
+   vision + mission bullets).
+
+> **This API does not use HTTP status codes for failures.** A rejected request
+> comes back as **HTTP 200** carrying `{code: 400, result: "false"}` — verified
+> against `/districtlist`. `src/lib/api.js` therefore checks the status *and*
+> the envelope inside the body. Checking `res.ok` alone reports failures as
+> successes, which for a form means telling an applicant their application was
+> submitted when it was not.
+
+**Still not tested:** actual form submissions. They are wired to the documented
+endpoints with the documented payloads, but a real submission writes a record
+into the client's production database, so it needs a staging endpoint or the
+client's go-ahead.
 
 ---
 

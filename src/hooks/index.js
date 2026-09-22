@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * Fetches once on mount with an AbortController, and exposes a retry.
@@ -174,4 +174,39 @@ export function useMediaQuery(query) {
     return () => mq.removeEventListener('change', onChange);
   }, [query]);
   return matches;
+}
+
+/**
+ * Live API data with a built-in offline fallback.
+ *
+ * Every read section follows the same contract: call the live endpoint, map the
+ * response into the component's shape, and fall back to the extracted snapshot
+ * in src/data if the request fails or returns nothing. The section therefore
+ * never renders empty, and `source` tells the caller which one it is showing.
+ *
+ *   const { data, source, loading, error, retry } = useApiData(getAboutUs, staticAbout, mapAbout)
+ */
+export function useApiData(fetcher, fallback, mapper) {
+  const { data, loading, error, retry } = useAsync(fetcher, []);
+
+  const value = useMemo(() => {
+    if (!data) return fallback;
+    try {
+      const mapped = mapper ? mapper(data) : data;
+      const empty =
+        mapped == null || (Array.isArray(mapped) && mapped.length === 0);
+      return empty ? fallback : mapped;
+    } catch {
+      // A shape change upstream must not take the section down.
+      return fallback;
+    }
+  }, [data, fallback, mapper]);
+
+  return {
+    data: value,
+    source: data && value !== fallback ? 'api' : 'fallback',
+    loading,
+    error,
+    retry,
+  };
 }
