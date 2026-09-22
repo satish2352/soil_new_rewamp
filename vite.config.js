@@ -8,6 +8,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // GSAP and Lenis are split out so they cache independently of app
+          // code — they change on library upgrades, the app changes on every
+          // deploy, and bundling them together invalidates both every time.
+          if (id.includes('node_modules/gsap')) return 'gsap'
+          if (id.includes('node_modules/lenis')) return 'lenis'
           if (id.includes('node_modules/framer-motion')) return 'motion'
           if (id.includes('node_modules/react-router')) return 'router'
           if (id.includes('node_modules/react')) return 'react'

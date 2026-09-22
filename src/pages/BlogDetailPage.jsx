@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import blogs from '../data/blogs.json';
 import { useI18n } from '../lib/i18n';
-import { ImageReveal, Reveal } from '../lib/motion';
+import { ImageReveal, Reveal } from '../lib/motion-react';
 import Seo from '../components/Seo';
 import PageHero from '../components/PageHero';
 import { ArticleCard } from '../sections/Articles';

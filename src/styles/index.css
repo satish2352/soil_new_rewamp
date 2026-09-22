@@ -8,6 +8,7 @@
     /* Agriculture palette. Change these values to recolour the entire site. */
     --c-primary: 36 92 58; /* #245C3A deep forest green */
     --c-deep: 22 61 41; /* #163D29 */
+    --c-void: 8 22 15; /* #08160F — the deepest band; cinematic scenes only */
     --c-leaf: 110 159 69; /* #6E9F45 natural leaf */
     --c-earth: 138 90 59; /* #8A5A3B */
     --c-soil: 90 62 43; /* #5A3E2B */
@@ -26,6 +27,32 @@
     --c-line: 176 203 170; /* #B0CBAA */
 
     --header-h: 4.5rem;
+
+    /*
+      The gutter lives here rather than only in tailwind.config.js because
+      full-bleed elements need to reproduce the shell's left edge in plain CSS.
+      `spacing.gutter` in the Tailwind config reads this same variable, so the
+      two can never drift.
+
+      `--shell-inset` is that left edge: the gutter on narrow viewports, and
+      once the shell hits its 82rem cap, the gutter plus whatever the centring
+      margin has become. A viewport-wide track padded by this starts exactly
+      where `.shell` content starts.
+    */
+    --gutter: clamp(1.15rem, 0.6rem + 2.2vw, 3rem);
+    --shell-inset: max(var(--gutter), calc((100vw - 82rem) / 2 + var(--gutter)));
+
+    /*
+      Motion tokens. One vocabulary, shared by CSS transitions and the JS motion
+      system in lib/motion.jsx — a duration or an easing is never invented per
+      component, it is picked from this list.
+    */
+    --dur-fast: 180ms;
+    --dur-normal: 320ms;
+    --dur-slow: 620ms;
+    --dur-cine: 1100ms;
+    --ease-organic: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-cine: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   * {
@@ -65,13 +92,28 @@
     text-wrap: pretty;
   }
 
+  /*
+    Editorial display type. Above roughly 4rem the base heading tracking reads
+    loose, so display sizes get their own tighter setting and a sub-1 leading.
+    Applied by class, never by size, so a large heading that is not a display
+    moment keeps normal metrics.
+  */
+  .display {
+    @apply font-display;
+    letter-spacing: -0.03em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
   /* Devanagari needs its looser leading back on headings too. */
   :lang(mr) h1,
   :lang(hi) h1,
   :lang(mr) h2,
   :lang(hi) h2,
   :lang(mr) h3,
-  :lang(hi) h3 {
+  :lang(hi) h3,
+  :lang(mr) .display,
+  :lang(hi) .display {
     line-height: 1.35;
     letter-spacing: 0;
   }
@@ -91,6 +133,14 @@
   iframe {
     max-width: 100%;
   }
+
+  /* Scrollbar toned to the palette rather than left as the OS default. */
+  @supports (scrollbar-color: auto) {
+    html {
+      scrollbar-color: rgb(var(--c-leaf) / 0.55) transparent;
+      scrollbar-width: thin;
+    }
+  }
 }
 
 /* -------------------------------------------------------------- components */
@@ -99,11 +149,34 @@
     @apply mx-auto w-full max-w-shell px-gutter;
   }
 
+  /* Wider measure for full-bleed editorial moments — pinned scenes, galleries. */
+  .shell-wide {
+    @apply mx-auto w-full max-w-wide px-gutter;
+  }
+
   .section {
     @apply py-section;
   }
 
-  /* Eyebrow above a section title. */
+  /* Taller rhythm for the few sections that carry a scene rather than a grid. */
+  .scene {
+    @apply py-scene;
+  }
+
+  /*
+    Eyebrow above a section title.
+
+    Colour comes from `--c-primary` and nothing else. There used to be a
+    `.band-dark .eyebrow { color: sun }` override, which looks equivalent —
+    every band remaps `--c-primary` to the accent anyway — but a descendant
+    selector does not stop at a nested `.band-light`. A featured card sitting
+    as a light island inside a dark section therefore got a gold eyebrow on a
+    pale surface: 2.03:1, well under AA, and invisible in review because the
+    section around it looked correct.
+
+    Reading the token instead keeps the band contract the rest of the system
+    relies on — restore the token, and everything inside follows.
+  */
   .eyebrow {
     @apply inline-flex items-center gap-2 text-fluid-xs font-semibold uppercase tracking-[0.18em] text-primary;
   }
@@ -113,13 +186,10 @@
     @apply inline-block h-px w-8 bg-primary/50;
   }
 
-  /* Same eyebrow, inverted for deep-green bands. */
-  .eyebrow-dark {
-    @apply text-sun;
-  }
-
-  .eyebrow-dark::before {
-    @apply bg-sun/50;
+  /* Numeric and label micro-type: section indices, counters, meta rows. */
+  .micro {
+    @apply text-fluid-xs font-semibold uppercase tracking-[0.2em];
+    font-variant-numeric: tabular-nums;
   }
 
   .btn {
@@ -139,6 +209,26 @@
 
   .btn-ghost {
     @apply btn border border-line bg-transparent text-ink hover:border-primary hover:bg-primary/5;
+  }
+
+  /*
+    Sweep button: the label sits over a pill that wipes up from below on hover.
+    This is the one "expensive" button treatment, reserved for primary CTAs so
+    it still reads as special. Transform-only, so it composites on the GPU.
+  */
+  .btn-sweep {
+    @apply relative isolate overflow-hidden;
+  }
+
+  .btn-sweep::before {
+    content: '';
+    @apply absolute inset-0 -z-10 translate-y-full rounded-full bg-deep
+           transition-transform duration-slow ease-cine;
+  }
+
+  .btn-sweep:hover::before,
+  .btn-sweep:focus-visible::before {
+    @apply translate-y-0;
   }
 
   /* Desktop nav item. Colour is inherited from the header so the same markup
@@ -215,19 +305,32 @@
     color: rgb(var(--c-text));
   }
 
-  /* Headings and the eyebrow rule invert with the band. */
-  .band-dark h2,
-  .band-dark h3,
-  .band-dark h4 {
+  /*
+    The deepest band — near-black soil. Reserved for the two moments that should
+    feel like a darkened room: the scroll handoff out of the hero, and the
+    pinned method scene. Same token-remapping contract as `.band-dark`, so every
+    child inverts on its own and nested `.band-light` islands still work.
+  */
+  .band-void {
+    --c-bg: 8 22 15;
+    --c-surface: 18 40 27;
+    --c-text: 236 244 232;
+    --c-muted: 158 186 160; /* 8.9:1 on #08160F */
+    --c-line: 40 70 50;
+    --c-primary: 214 168 58;
+
+    background-color: rgb(var(--c-bg));
     color: rgb(var(--c-text));
   }
 
-  .band-dark .eyebrow {
-    @apply text-sun;
-  }
-
-  .band-dark .eyebrow::before {
-    @apply bg-sun/50;
+  /* Headings and the eyebrow rule invert with the band. */
+  .band-dark h2,
+  .band-dark h3,
+  .band-dark h4,
+  .band-void h2,
+  .band-void h3,
+  .band-void h4 {
+    color: rgb(var(--c-text));
   }
 
   /*
@@ -255,25 +358,87 @@
   /* The primary button loses its figure/ground on a deep band — use the accent.
      Colours are written literally here: `@apply text-deep` would be circular,
      since `.text-deep` is itself remapped just above. */
-  .band-dark .btn-primary {
+  .band-dark .btn-primary,
+  .band-void .btn-primary {
     background-color: rgb(var(--c-accent));
     color: rgb(var(--c-deep));
   }
 
-  .band-dark .btn-primary:hover {
+  .band-dark .btn-primary:hover,
+  .band-void .btn-primary:hover {
     background-color: rgb(var(--c-accent));
     filter: brightness(1.05);
   }
 
-  .band-dark .btn-ghost {
+  /* The sweep pill is dark by default; on a dark band it has to be the light one. */
+  .band-dark .btn-sweep::before,
+  .band-void .btn-sweep::before {
+    background-color: rgb(var(--c-cream));
+  }
+
+  .band-dark .btn-ghost,
+  .band-void .btn-ghost {
     border-color: rgb(var(--c-cream) / 0.3);
     color: rgb(var(--c-cream));
   }
 
-  .band-dark .btn-ghost:hover {
+  .band-dark .btn-ghost:hover,
+  .band-void .btn-ghost:hover {
     border-color: rgb(var(--c-accent));
     background-color: rgb(var(--c-cream) / 0.1);
     color: rgb(var(--c-accent));
+  }
+
+  /*
+    Section transition.
+
+    `.lift-edge` pulls a section up over the one before it and rounds its top
+    corners, so two bands overlap rather than butt together. The raised
+    stacking context is load-bearing: without it the previous section paints
+    over the rounded corner and the effect disappears.
+  */
+  .lift-edge {
+    position: relative;
+    z-index: 1;
+    margin-top: clamp(-4.5rem, -5vw, -2rem);
+    border-start-start-radius: clamp(1.5rem, 4vw, 3rem);
+    border-start-end-radius: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  /*
+    Whatever follows a page hero gets the same overlap, automatically.
+
+    Doing this with an adjacent-sibling rule rather than a class on each page
+    means every route — including ones added later — picks up the transition
+    without anyone remembering to opt in, and there is exactly one place to
+    change it.
+
+    The explicit `background-color` is required, not cosmetic: the element is
+    pulled up over the hero, so without a ground of its own the dark band shows
+    straight through and the rounded corner never appears. `var(--c-bg)`
+    resolves against the *following* section's own tokens, so a `.band-dark`
+    section correctly paints itself dark rather than page-background green.
+  */
+  .page-hero + section {
+    position: relative;
+    z-index: 1;
+    margin-top: clamp(-4.5rem, -5vw, -2rem);
+    border-start-start-radius: clamp(1.5rem, 4vw, 3rem);
+    border-start-end-radius: clamp(1.5rem, 4vw, 3rem);
+    background-color: rgb(var(--c-bg));
+
+    /*
+      The section has already been pulled up by its own height's worth of
+      negative margin, so a full `py-section` on top of that reads as a hole
+      between the rounded edge and the first line of content. This is the
+      remaining breathing room, not the full rhythm.
+    */
+    padding-top: clamp(2.5rem, 1.5rem + 3vw, 5rem);
+  }
+
+  /* A hairline that fades at both ends — separates without drawing a box. */
+  .rule-soft {
+    @apply h-px w-full border-0 bg-gradient-to-r from-transparent via-line to-transparent;
   }
 }
 
@@ -318,6 +483,33 @@
       transparent 1px
     );
     background-size: 3px 3px;
+  }
+
+  /*
+    Horizontal rail.
+
+    Native overflow scrolling with snap points, not a scroll-jacked translate:
+    the page keeps its own vertical scroll, the rail stays reachable by
+    keyboard, trackpad and touch, and it needs no JavaScript to work at all.
+  */
+  .rail {
+    @apply no-scrollbar flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain;
+    scroll-behavior: smooth;
+  }
+
+  .rail > * {
+    @apply shrink-0 snap-start;
+  }
+
+  /* Fades the rail's trailing edge so a cut-off card reads as "more this way". */
+  .rail-fade {
+    -webkit-mask-image: linear-gradient(to right, #000 86%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 86%, transparent 100%);
+  }
+
+  /* Perspective container for the restrained card tilt. */
+  .persp {
+    perspective: 1000px;
   }
 }
 
@@ -434,26 +626,67 @@
   @apply border-l-4 border-leaf/60 bg-cream/60 py-2 pl-5 italic;
 }
 
-/* ----------------------------------------------------- reduced motion policy */
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+/* ----------------------------------------------------------- cursor system */
+/*
+  A trailing ring, not a cursor replacement.
 
-  /* Kill parallax, drift and transform-based reveals; keep opacity so nothing
-     is left invisible if a reveal never fires. */
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
+  The usual "custom cursor" sets `cursor: none` and redraws the pointer in JS.
+  That throws away every affordance the OS gives for free — the I-beam over
+  text, the resize arrows, the hand over a link — and it visibly lags whenever
+  the main thread is busy, which is exactly when a user needs to see where they
+  are pointing. So the native cursor stays, and a soft ring trails it with
+  spring damping, widening over interactive elements. Desktop pointers only,
+  and removed outright under reduced motion.
+*/
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 300;
+  pointer-events: none;
+  height: 2.25rem;
+  width: 2.25rem;
+  /* Centred on the pointer. GSAP animates width/height for the labelled
+     states, so the offset is done with translate rather than a fixed margin
+     that would no longer be half the size. */
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  border: 1px solid rgb(var(--c-primary) / 0.5);
+  color: rgb(var(--c-primary));
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform;
+}
 
-  .parallax-layer {
-    transform: none !important;
-  }
+/* Multiply makes the ring vanish against a dark band; screen keeps it. */
+.cursor-ring[data-band='light'] {
+  mix-blend-mode: multiply;
+}
+
+.cursor-ring[data-band='dark'] {
+  border-color: rgb(var(--c-accent) / 0.65);
+  color: rgb(var(--c-accent));
+  mix-blend-mode: screen;
+}
+
+/*
+  Labelled states carry a word, so they need a ground to sit on — an outline
+  alone leaves the text competing with whatever photograph is underneath.
+  Blend mode is dropped here for the same reason.
+*/
+.cursor-ring[data-state='view'],
+.cursor-ring[data-state='drag'],
+.cursor-ring[data-state='explore'] {
+  mix-blend-mode: normal;
+  background-color: rgb(var(--c-accent));
+  border-color: transparent;
+  color: rgb(var(--c-deep));
+}
+
+.cursor-ring[data-state='cta'] {
+  mix-blend-mode: normal;
+  background-color: rgb(var(--c-accent) / 0.2);
+  border-color: rgb(var(--c-accent));
 }
 
 /* --------------------------------------------------------- Google Translate
@@ -490,4 +723,37 @@ iframe.skiptranslate,
   overflow: hidden !important;
   box-shadow: none !important;
   background: none !important;
+}
+
+/* ----------------------------------------------------- reduced motion policy */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  /* Kill parallax, drift and transform-based reveals; keep opacity so nothing
+     is left invisible if a reveal never fires. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .parallax-layer {
+    transform: none !important;
+  }
+
+  /* The cursor ring is decorative motion by definition — remove it outright. */
+  .cursor-ring {
+    display: none !important;
+  }
+
+  /* Snap scrolling animates the viewport; leave the rail a plain scroller. */
+  .rail {
+    scroll-behavior: auto;
+    scroll-snap-type: none;
+  }
 }

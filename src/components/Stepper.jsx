@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useI18n } from '../lib/i18n';
-import { EASE } from '../lib/motion';
+import { EASE } from '../lib/motion-react';
 import Icon from './Icon';
 
 /**

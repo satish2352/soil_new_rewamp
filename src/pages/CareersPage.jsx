@@ -6,7 +6,7 @@ import InternshipForm from '../sections/forms/InternshipForm';
 import DistributorForm from '../sections/forms/DistributorForm';
 import JobVacancyForm from '../sections/forms/JobVacancyForm';
 import { useI18n } from '../lib/i18n';
-import { Reveal } from '../lib/motion';
+import { Reveal } from '../lib/motion-react';
 import Icon from '../components/Icon';
 
 const TRACKS = [

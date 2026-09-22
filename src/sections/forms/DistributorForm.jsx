@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { submitDistributorRegistration, ValidationError } from '../../lib/api';
 import { focusFirstError, hasErrors, validate } from '../../lib/validate';
 import { useI18n } from '../../lib/i18n';
-import { EASE, motion } from '../../lib/motion';
+import { EASE, motion } from '../../lib/motion-react';
 import { Field, FileField, FormNotice } from '../../components/Field';
 import LocationPicker from '../../components/LocationPicker';
 import Stepper from '../../components/Stepper';

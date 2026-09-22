@@ -5,7 +5,7 @@ import { getProducts } from '../lib/api';
 import { useAsync } from '../hooks';
 import { useI18n } from '../lib/i18n';
 import { cleanCmsHtml } from '../lib/cms-html';
-import { ImageReveal, Reveal } from '../lib/motion';
+import { ImageReveal, Reveal } from '../lib/motion-react';
 import Seo from '../components/Seo';
 import PageHero from '../components/PageHero';
 import { ProductCard } from '../sections/Products';

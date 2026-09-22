@@ -14,6 +14,59 @@
 
 const VOID_TAGS = new Set(['br', 'img', 'hr', 'input', 'meta', 'link', 'source', 'area', 'col']);
 
+const NAMED_ENTITIES = {
+  nbsp: ' ',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  ldquo: '“',
+  rdquo: '”',
+  lsquo: '‘',
+  rsquo: '’',
+  ndash: '–',
+  mdash: '—',
+  hellip: '…',
+  bull: '•',
+  copy: '©',
+  reg: '®',
+  trade: '™',
+  deg: '°',
+};
+
+/**
+ * Decodes HTML entities in a string that is going to be rendered as *text*.
+ *
+ * Anything handed to `dangerouslySetInnerHTML` does not need this — the browser
+ * decodes entities itself. It is required wherever we pull text out of CMS HTML
+ * with a regex, because then nothing ever parses it as HTML and the reader is
+ * shown the literal source. That is how "farmers&#39; state" reached the Vision
+ * panel: the mapper stripped the tags and handled `&nbsp;` but no other entity.
+ *
+ * Numeric forms are decoded first so `&amp;#39;` cannot round-trip into a
+ * quote — a double-encoded string should stay visibly wrong rather than
+ * silently become something else.
+ */
+export function decodeEntities(input) {
+  if (!input) return '';
+  return String(input)
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&([a-z]+);/gi, (match, name) => {
+      const hit = NAMED_ENTITIES[name.toLowerCase()];
+      return hit === undefined ? match : hit;
+    });
+}
+
+/** Strips tags and decodes entities — CMS HTML reduced to a plain string. */
+export function htmlToText(html) {
+  if (!html) return '';
+  return decodeEntities(String(html).replace(/<[^>]+>/g, ' '))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Drops orphan closing tags and closes what is left open. */
 function balanceTags(html) {
   const stack = [];

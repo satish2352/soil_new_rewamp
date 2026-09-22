@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEscape, useScrollLock } from '../hooks';
 import { useI18n } from '../lib/i18n';
-import { EASE } from '../lib/motion';
+import { EASE } from '../lib/motion-react';
 import Icon from './Icon';
 
 /**

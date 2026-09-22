@@ -1,36 +1,60 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Reveal, TextReveal } from '../lib/motion';
+import { Reveal, TextReveal } from '../lib/motion-react';
 import { imageChain } from '../lib/images';
 import { useI18n } from '../lib/i18n';
 import Icon from './Icon';
 
-/** Section heading with an eyebrow line and a two-tone title. */
+/**
+ * Section heading: eyebrow, title, and an optional trailing action.
+ *
+ * The default alignment is left, not centre. Centring every heading on a page
+ * is one of the strongest tells that a layout came from a template — it removes
+ * the only axis the reader can use to tell one section from another, and it
+ * fights the natural reading edge that every paragraph beneath it uses anyway.
+ * `align="center"` is still available for the few places that earn it.
+ *
+ * `action` renders opposite the title on wide screens, so "view all" style
+ * links belong to the heading rather than floating at the foot of the section.
+ */
 export function SectionHeading({
   eyebrow,
   lead,
   title,
-  align = 'center',
+  action,
+  align = 'left',
   className = '',
   id,
   tone = 'light',
 }) {
-  const alignment =
-    align === 'center' ? 'items-center text-center mx-auto' : 'items-start text-left';
+  const centred = align === 'center';
   const dark = tone === 'dark';
 
   return (
-    <div className={`flex max-w-3xl flex-col gap-4 ${alignment} ${className}`}>
-      {eyebrow && (
-        <Reveal as="p" className={dark ? 'eyebrow eyebrow-dark' : 'eyebrow'} duration={0.5}>
-          {eyebrow}
+    <div
+      className={`flex flex-col gap-6 ${
+        centred ? 'items-center text-center' : 'lg:flex-row lg:items-end lg:justify-between'
+      } ${className}`}
+    >
+      <div className={`flex max-w-3xl flex-col gap-4 ${centred ? 'items-center' : 'items-start'}`}>
+        {/* No tone variant: `.eyebrow` reads `--c-primary`, which each band already remaps. */}
+        {eyebrow && (
+          <Reveal as="p" className="eyebrow" duration={0.5}>
+            {eyebrow}
+          </Reveal>
+        )}
+        <TextReveal
+          as="h2"
+          id={id}
+          text={lead ? `${lead} ${title}` : title}
+          className={`display text-fluid-3xl font-semibold ${dark ? 'text-cream' : 'text-deep'}`}
+        />
+      </div>
+
+      {action && (
+        <Reveal delay={0.1} className="shrink-0">
+          {action}
         </Reveal>
       )}
-      <TextReveal
-        as="h2"
-        id={id}
-        text={lead ? `${lead} ${title}` : title}
-        className={`font-display text-fluid-3xl font-semibold ${dark ? 'text-cream' : 'text-deep'}`}
-      />
     </div>
   );
 }

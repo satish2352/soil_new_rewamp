@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { whatsapp } from '../data/site';
 import { useI18n } from '../lib/i18n';
 import { useEscape } from '../hooks';
-import { EASE } from '../lib/motion';
+import { EASE } from '../lib/motion-react';
 import Icon from './Icon';
 
 /**

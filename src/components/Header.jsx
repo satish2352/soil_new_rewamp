@@ -4,9 +4,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { company, contact, nav } from '../data/site';
 import { useI18n } from '../lib/i18n';
 import { useEscape, useScrollLock, useScrolled } from '../hooks';
-import { EASE } from '../lib/motion';
+import { EASE } from '../lib/motion-react';
 import Icon from './Icon';
 import LanguageSelector from './LanguageSelector';
+import MagneticButton from './MagneticButton';
+import ScrollProgress from './ScrollProgress';
 
 /** Desktop dropdown for a nav item that has children. */
 function Dropdown({ item, t }) {
@@ -111,12 +113,19 @@ export default function Header({ onEnquiry }) {
         {t('nav.skip')}
       </a>
 
+      {/*
+        `data-band` tells the cursor ring which blend mode to use. Over the
+        transparent header the ground is the void hero; once scrolled the bar
+        itself is light. Without this the ring multiplies against near-black and
+        disappears exactly where the primary navigation is.
+      */}
       <header
+        data-band={scrolled ? 'light' : 'dark'}
         className={`fixed inset-x-0 top-0 z-[90] transition-all duration-500 ease-organic
                     ${
                       scrolled
                         ? 'border-b border-line/80 bg-canvas/88 backdrop-blur-xl shadow-soft'
-                        : 'bg-gradient-to-b from-deep/45 to-transparent'
+                        : 'bg-gradient-to-b from-void/75 via-void/35 to-transparent'
                     }`}
       >
         {/* Utility strip — the contact details the legacy site kept in a top bar. */}
@@ -160,8 +169,26 @@ export default function Header({ onEnquiry }) {
               height="44"
               className="h-10 w-10 rounded-full bg-white/90 object-contain p-1 shadow-soft sm:h-11 sm:w-11"
             />
+            {/*
+              The wordmark drops below 390px.
+
+              Adding the mobile enquiry button gave this row four controls plus
+              the logo, and at 320-360px that pushed the menu button's right
+              edge to 365px — past the viewport, clipped silently by the body's
+              `overflow-x: hidden` and therefore hard to tap. The wordmark is
+              the one element here with a redundant job: the mark still carries
+              the brand and the link still has its `aria-label`, so nothing is
+              lost by name or by function.
+
+              Deliberately not the language selector, even though it frees more
+              room and is duplicated in the mobile menu — Marathi and Hindi
+              speakers on inexpensive Android handsets are exactly the people
+              on a 320px screen, and burying their language switch is the wrong
+              trade on this site.
+            */}
             <span
-              className={`font-display text-[0.95rem] font-semibold leading-tight transition-colors sm:text-fluid-lg
+              className={`font-display text-[0.95rem] font-semibold leading-tight transition-colors
+                          max-[389px]:hidden sm:text-fluid-lg
                           ${scrolled ? 'text-deep' : 'text-cream'}`}
             >
               Soil Charger
@@ -197,13 +224,55 @@ export default function Header({ onEnquiry }) {
           <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSelector dark={!scrolled} />
 
-            <button
-              type="button"
+            <MagneticButton
               onClick={onEnquiry}
+              strength={7}
               className="btn-accent hidden !px-5 !py-2.5 text-fluid-xs lg:inline-flex"
             >
               {t('cta.sendEnquiry')}
-            </button>
+            </MagneticButton>
+
+            {/*
+              The mobile enquiry action.
+
+              Below `lg` the header offered only Language and Menu, so an
+              engaged reader a third of the way down a 22-screen page had no
+              way to act: reaching the enquiry form meant opening the hamburger
+              and scrolling it. Measured on a real touch profile, the only
+              things on screen at 35% depth were Language, Menu and WhatsApp.
+
+              It appears on scroll rather than immediately, which is the point.
+              At the top of the page the hero's own CTA is right there and a
+              second one would just be noise; by the time the header has
+              condensed, the visitor has committed to reading and the action
+              has become worth offering. Icon-only so it costs ~44px next to
+              the menu button, with the label carried by `aria-label`.
+            */}
+            <AnimatePresence>
+              {scrolled && (
+                <motion.button
+                  type="button"
+                  onClick={onEnquiry}
+                  aria-label={t('cta.sendEnquiry')}
+                  /*
+                    Fades and lifts rather than scaling. Scaling a control from
+                    0.7 shrinks its hit area with it — the QA sweep caught this
+                    button at 37x37 mid-entrance, under the 44px minimum, which
+                    is a real (if brief) target for anyone tapping as it
+                    appears. Opacity and translate leave the box at full size
+                    for the whole animation.
+                  */
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.28, ease: EASE }}
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sun
+                             text-deep shadow-soft transition-colors hover:brightness-105 lg:hidden"
+                >
+                  <Icon name="mail" size={19} />
+                </motion.button>
+              )}
+            </AnimatePresence>
 
             <button
               type="button"
@@ -221,6 +290,9 @@ export default function Header({ onEnquiry }) {
             </button>
           </div>
         </div>
+
+        {/* Reading progress, drawn on the header's own bottom edge. */}
+        <ScrollProgress />
       </header>
 
       {/* Mobile / tablet full-screen sheet */}

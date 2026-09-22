@@ -1,14 +1,24 @@
-import { motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 import staticSlides from '../data/slides.json';
 import { getSlides } from '../lib/api';
 import { useApiData } from '../hooks';
 import { hero, stats } from '../data/site';
 import { useI18n } from '../lib/i18n';
-import { EASE, useParallax } from '../lib/motion';
+import {
+  CLIP,
+  DEPTH,
+  DUR,
+  EASE,
+  GAP,
+  gsap,
+  prefersReducedMotion,
+  splitText,
+  useGsap,
+  usePointerDepth,
+} from '../lib/motion';
 import { SmartImage } from '../components/ui';
 import { hasLocalCopy } from '../lib/images';
+import MagneticButton from '../components/MagneticButton';
 import Icon from '../components/Icon';
 
 const ROTATE_MS = 6500;
@@ -23,15 +33,38 @@ function mapSlides(rows) {
 }
 
 /**
- * Hero. Keeps the existing headline, sub-line and Shop Now CTA, and reuses the
- * cover images the CMS already serves — the two records with a null photo are
- * filtered out upstream, so no blank slide can appear.
+ * Hero — the opening scene.
+ *
+ * Content is unchanged and is the client's: their headline (typo and all),
+ * their sub-line, their Shop Now CTA, the cover photos the CMS already serves,
+ * and three figures drawn from the same data as the stats band.
+ *
+ * Five layers, as the brief specifies:
+ *
+ *   1  designed backdrop, drawn in CSS          data-depth 0.05
+ *   2  the CMS cover photographs                data-depth 0.08
+ *   3  the headline and copy                    data-depth 0.02
+ *   4  scroll-driven camera push and veil
+ *   5  pointer parallax across all of the above
+ *
+ * The entrance is one GSAP timeline rather than a dozen independent delays, so
+ * the choreography is readable in one place and can be retimed by moving a
+ * single position parameter. The scroll response is a separate scrubbed
+ * timeline — the intro plays once, the camera keeps working for as long as the
+ * hero is on screen.
+ *
+ * Everything animated here is a transform, an opacity or a clip-path, so the
+ * whole scene composites on the GPU and never touches layout.
  */
 export default function Hero({ onCta }) {
   const { t } = useI18n();
-  const reduce = useReducedMotion();
   const [index, setIndex] = useState(0);
-  const { ref, y } = useParallax(50);
+  // One ref per headline line: each is split separately so the accent colour
+  // on the second line survives, which a single-string split cannot preserve.
+  const lineRefs = useRef([]);
+
+  // Layer 5: pointer parallax. Reads `data-depth` off descendants.
+  const depthRef = usePointerDepth({ strength: 1 });
 
   // Live cover slides; the API already filters records with no photo.
   const { data: slides } = useApiData(getSlides, staticSlides, mapSlides);
@@ -43,67 +76,162 @@ export default function Hero({ onCta }) {
     return () => clearInterval(id);
   }, [images.length]);
 
+  const scope = useGsap((ctx, root) => {
+    const q = gsap.utils.selector(root);
+
+    /*
+      Reduced motion: put everything in its final state and stop. Not a faster
+      intro — no intro, no camera, no veil.
+    */
+    if (prefersReducedMotion()) {
+      gsap.set(q('[data-intro]'), { opacity: 1, y: 0, clipPath: CLIP.shown });
+      return;
+    }
+
+    // ---------------------------------------------------- entrance timeline
+    /*
+      Split per line and concatenate, so the two lines share one continuous
+      stagger while keeping their own colour. Splitting the whole headline as
+      one string would flatten "FARMER WALTHIER" back to the body colour.
+    */
+    const chars = lineRefs.current
+      .filter(Boolean)
+      .flatMap((node) => splitText(node, { type: 'chars', srOnly: false }).targets);
+
+    /*
+      `fromTo` throughout, never `from`.
+
+      `gsap.from()` reads the element's *current* value as the animation's end
+      state. That is fine once, and a trap on any re-run: this effect re-fires
+      when the slide data resolves, `ctx.revert()` kills the in-flight
+      timeline, and the replacement `from()` then reads the leftover
+      `opacity: 0` as its destination — so it dutifully animated 0 to 0 and the
+      hero CTAs never appeared. `fromTo` states both ends explicitly and is
+      therefore idempotent no matter what the DOM was left holding.
+    */
+    const tl = gsap.timeline({ defaults: { ease: EASE.cine } });
+
+    tl.fromTo(
+      q('[data-intro="backdrop"]'),
+      { opacity: 0, scale: 1.08 },
+      { opacity: 1, scale: 1, duration: DUR.epic },
+      0
+    )
+      .fromTo(
+        q('[data-intro="eyebrow"]'),
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: DUR.slow },
+        0.15
+      )
+      // The headline assembles from its own masks — the loudest moment, and
+      // the only character-level reveal in the system.
+      .fromTo(
+        chars,
+        { yPercent: 115 },
+        { yPercent: 0, duration: DUR.cine, stagger: GAP.tight },
+        0.25
+      )
+      .fromTo(
+        q('[data-intro="cta"]'),
+        { opacity: 0, y: 22 },
+        { opacity: 1, y: 0, duration: DUR.slow, stagger: GAP.normal },
+        0.75
+      )
+      .fromTo(
+        q('[data-intro="stats"]'),
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: DUR.slow },
+        0.9
+      )
+      .fromTo(q('[data-intro="index"]'), { opacity: 0 }, { opacity: 1, duration: DUR.slow }, 1.0)
+      .fromTo(q('[data-intro="cue"]'), { opacity: 0 }, { opacity: 1, duration: DUR.slow }, 1.1);
+
+    // ------------------------------------------------------- scroll camera
+    gsap
+      .timeline({
+        scrollTrigger: { trigger: root, start: 'top top', end: 'bottom top', scrub: true },
+      })
+      // The plate pushes in and drifts down as the hero leaves.
+      .to(q('[data-camera]'), { scale: 1.16, yPercent: 14, ease: 'none' }, 0)
+      // A veil closes over it, so the hero hands off rather than scrolling away.
+      .to(q('[data-veil]'), { opacity: 0.8, ease: 'none' }, 0)
+      .to(q('[data-copy]'), { y: -70, opacity: 0, ease: 'none' }, 0);
+    /*
+      Deps are empty on purpose. The camera animates the wrapper, not the
+      individual slides, so nothing here depends on the carousel data — and
+      re-running the whole context every time the API resolves is what created
+      the `from()` problem above in the first place.
+    */
+  }, []);
+
   return (
     <section
-      ref={ref}
-      className="relative isolate flex min-h-[clamp(34rem,88svh,52rem)] items-end overflow-hidden bg-deep"
+      ref={(node) => {
+        scope.current = node;
+        depthRef.current = node;
+      }}
+      className="band-void relative isolate flex min-h-[clamp(38rem,100svh,60rem)] flex-col justify-end overflow-hidden"
       aria-label="Soil Charger Technology"
     >
       {/*
-        Designed backdrop, drawn in CSS. It sits beneath the cover photos and
-        shows through whenever a cover fails to load — at the time of writing
-        every CMS upload on the API host returns 404, so without this the hero
-        would be a flat dark band. It is abstract soil-and-field colour, not a
-        photograph, so it makes no claim about any particular farm.
+        Layers 1 and 2 share one transformed wrapper so the backdrop, the
+        photographs and the grain push in together as a single plane.
+        Animating them apart reads as parallax between things that are meant to
+        be the same distance away.
       */}
-      <div aria-hidden="true" className="absolute inset-0 -z-30 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#20563a] via-[#17402b] to-[#33251a]" />
-        {/* Low sun on the horizon. */}
-        <div
-          className="absolute inset-x-0 top-[30%] h-[42%] blur-2xl"
-          style={{
-            background:
-              'radial-gradient(48% 90% at 68% 100%, rgb(var(--c-accent) / 0.5), transparent 72%)',
-          }}
-        />
-        {/* Soil strata across the lower third. */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-[42%]"
-          style={{
-            background:
-              'linear-gradient(180deg, transparent, rgb(var(--c-soil) / 0.7) 42%, rgb(var(--c-soil) / 0.92))',
-          }}
-        />
-        {/* Field rows, receding toward the horizon. */}
-        <div
-          className="absolute inset-x-[-20%] bottom-0 h-[34%] opacity-[0.16]"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(97deg, rgb(var(--c-cream)) 0 2px, transparent 2px 58px)',
-            transform: 'perspective(340px) rotateX(58deg)',
-            transformOrigin: 'bottom',
-          }}
-        />
-        <div className="absolute inset-0 grain opacity-[0.5]" />
-      </div>
+      <div aria-hidden="true" data-camera className="absolute inset-0 -z-30">
+        <div data-intro="backdrop" data-depth={DEPTH.background} className="absolute inset-[-4%]">
+          {/*
+            Designed backdrop, drawn in CSS. It sits beneath the cover photos
+            and shows through whenever one fails to load — at the time of
+            writing every CMS upload on the API host returns 404, so without
+            this the hero would be a flat dark band. It is abstract
+            soil-and-field colour, not a photograph, so it makes no claim about
+            any particular farm.
+          */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1b4a32] via-[#12301f] to-[#2b1f16]" />
+          <div
+            className="absolute inset-x-0 top-[28%] h-[44%] blur-2xl"
+            style={{
+              background:
+                'radial-gradient(48% 90% at 68% 100%, rgb(var(--c-accent) / 0.5), transparent 72%)',
+            }}
+          />
+          <div
+            className="absolute inset-x-0 bottom-0 h-[42%]"
+            style={{
+              background:
+                'linear-gradient(180deg, transparent, rgb(var(--c-soil) / 0.7) 42%, rgb(var(--c-soil) / 0.92))',
+            }}
+          />
+          {/* Field rows, receding toward the horizon. */}
+          <div
+            className="absolute inset-x-[-20%] bottom-0 h-[34%] opacity-15"
+            style={{
+              backgroundImage:
+                'repeating-linear-gradient(97deg, rgb(var(--c-cream)) 0 2px, transparent 2px 58px)',
+              transform: 'perspective(340px) rotateX(58deg)',
+              transformOrigin: 'bottom',
+            }}
+          />
+        </div>
 
-      {/* Slow cross-fade between the existing cover photos. */}
-      <div className="absolute inset-0 -z-20">
-        {images.map((s, i) => (
-          <motion.div
-            key={s.id}
-            className="absolute inset-0"
-            initial={false}
-            animate={{ opacity: i === index ? 1 : 0 }}
-            transition={{ duration: reduce ? 0.3 : 1.5, ease: 'easeInOut' }}
-            aria-hidden={i !== index}
-          >
-            <motion.div
-              className="h-full w-full"
-              initial={{ scale: 1.08 }}
-              animate={{ scale: i === index && !reduce ? 1 : 1.08 }}
-              transition={{ duration: 9, ease: 'linear' }}
+        {/* Layer 2 — the cover photographs, on a nearer plane. */}
+        <div data-depth={DEPTH.content} className="absolute inset-[-3%]">
+          {images.map((s, i) => (
+            <div
+              key={s.id}
+              className="absolute inset-0 transition-opacity duration-[1600ms] ease-in-out"
+              style={{ opacity: i === index ? 1 : 0 }}
             >
+              {/*
+                These covers are CMS *posters* — packshots carrying their own
+                headlines in Devanagari, not atmospheric photography. At full
+                fidelity behind a hero headline they compete with it: two sets
+                of large type fighting for the same space. A slight blur and
+                desaturation demotes them to the texture they are being used
+                as. The products themselves are shown properly further down.
+              */}
               <SmartImage
                 src={s.image}
                 alt=""
@@ -111,126 +239,153 @@ export default function Hero({ onCta }) {
                 loading={i === 0 ? 'eager' : 'lazy'}
                 fallback="none"
                 className="!h-full"
-                imgClassName="object-cover"
+                imgClassName="object-cover blur-[3px] saturate-[0.85] scale-105"
               />
-            </motion.div>
-          </motion.div>
-        ))}
+            </div>
+          ))}
+        </div>
+
+        <div className="absolute inset-0 grain opacity-55" />
       </div>
 
-      {/* Legibility wash — dark at the bottom where the copy sits. */}
+      {/* Legibility wash — dense where the copy sits, opening up to the right. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-r from-deep via-deep/80 to-deep/20"
+        className="absolute inset-0 -z-20 bg-gradient-to-r from-void via-void/92 to-void/45"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-deep/85 to-transparent"
+        className="absolute inset-x-0 bottom-0 -z-20 h-3/5 bg-gradient-to-t from-void via-void/70 to-transparent"
       />
-      <div aria-hidden="true" className="absolute inset-0 -z-10 grain opacity-60" />
+      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-void/25" />
 
-      {/* Drifting organic shapes — deliberately faint. */}
-      {!reduce && (
-        <>
-          <motion.div
-            aria-hidden="true"
-            style={{ y }}
-            className="parallax-layer pointer-events-none absolute -left-20 top-24 -z-10 h-64 w-64 blob bg-leaf/12 blur-2xl"
-          />
-          <motion.div
-            aria-hidden="true"
-            style={{ y }}
-            className="parallax-layer pointer-events-none absolute -right-16 top-1/3 -z-10 h-80 w-80 blob bg-sun/8 blur-3xl animate-drift"
-          />
-        </>
-      )}
+      {/* The closing veil: the scene dims as it hands off to the next section. */}
+      <div aria-hidden="true" data-veil className="absolute inset-0 -z-10 bg-void opacity-0" />
 
-      <div className="shell relative w-full pb-14 pt-36 sm:pb-20 sm:pt-44">
-        <div className="max-w-4xl">
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: EASE }}
-            className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-cream/25 bg-cream/10
+      <div data-copy className="shell relative w-full pb-20 pt-36 sm:pb-24 sm:pt-44">
+        <div className="max-w-5xl" data-depth="0.02">
+          <p
+            data-intro="eyebrow"
+            className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-cream/25 bg-cream/8
                        px-4 py-2 text-fluid-xs font-semibold uppercase tracking-[0.16em] text-cream/90 backdrop-blur-md"
           >
             <Icon name="leaf" size={15} className="text-leaf" />
             {hero.subtitle}
-          </motion.p>
+          </p>
 
-          {/* Headline reveals line by line. The exact wording is the client's. */}
-          <h1 className="font-display text-fluid-4xl font-semibold leading-[1.05] text-cream">
+          {/*
+            Split into characters by the motion system at run time rather than
+            in markup, so the source stays one readable string and a translated
+            headline splits correctly too. `splitText` keeps the original in an
+            sr-only span and hides the pieces from assistive tech.
+          */}
+          <h1 data-intro="headline" className="display text-fluid-5xl font-semibold text-cream">
+            {/*
+              The accessible copy is the whole headline as one string. The
+              visible lines are aria-hidden because `splitText` replaces each
+              with per-character spans, and a headline split into 69 nodes is
+              announced by some screen readers as 69 separate items.
+            */}
             <span className="sr-only">{hero.titleLines.join(' ')}</span>
             <span aria-hidden="true">
               {hero.titleLines.map((line, i) => (
-                <span key={line} className="reveal-clip block">
-                  <motion.span
-                    className="block"
-                    initial={reduce ? { opacity: 0 } : { y: '106%' }}
-                    animate={reduce ? { opacity: 1 } : { y: 0 }}
-                    transition={{ duration: 0.95, delay: 0.25 + i * 0.13, ease: EASE }}
-                  >
-                    {i === 1 ? (
-                      <span className="text-sun">{line}</span>
-                    ) : (
-                      line
-                    )}
-                  </motion.span>
+                <span
+                  key={line}
+                  ref={(node) => {
+                    lineRefs.current[i] = node;
+                  }}
+                  className={`block ${i === 1 ? 'text-sun' : ''}`}
+                >
+                  {line}
                 </span>
               ))}
             </span>
           </h1>
 
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.62, ease: EASE }}
-            className="mt-8 flex flex-wrap items-center gap-3"
-          >
-            <button type="button" onClick={onCta} className="btn-accent !px-7 !py-3.5 text-fluid-base">
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <MagneticButton
+              data-intro="cta"
+              data-cursor="cta"
+              onClick={onCta}
+              className="btn-accent btn-sweep !px-8 !py-4 text-fluid-base"
+            >
               {t('cta.shopNow')}
               <Icon name="arrowRight" size={18} />
-            </button>
-            <Link to="/products" className="btn !px-7 !py-3.5 border border-cream/30 text-cream hover:bg-cream/10">
+            </MagneticButton>
+            <MagneticButton
+              data-intro="cta"
+              to="/products"
+              strength={7}
+              className="btn !px-8 !py-4 border border-cream/30 text-cream hover:border-sun hover:bg-cream/10"
+            >
               {t('nav.products')}
-            </Link>
-          </motion.div>
+            </MagneticButton>
+          </div>
 
-          {/* Two strongest figures, pulled from the same data as the stats band. */}
-          <motion.dl
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.85 }}
-            className="mt-12 flex flex-wrap gap-x-10 gap-y-5 border-t border-cream/15 pt-7"
+          {/*
+            Two columns on a phone, three from `sm`. At 390px a three-column
+            rail leaves about 85px of content per cell and "10,00,000+" needs
+            roughly 120px, so the widest figure on the site was having its "+"
+            sliced off. The last cell spans the full width on phones so the row
+            does not end on a hole.
+          */}
+          <dl
+            data-intro="stats"
+            className="mt-14 grid max-w-2xl grid-cols-2 gap-px overflow-hidden rounded-xl bg-cream/15 sm:grid-cols-3"
           >
             {stats.slice(0, 3).map((s) => (
-              <div key={s.key}>
-                <dt className="text-fluid-xs uppercase tracking-[0.14em] text-cream/55">{s.label}</dt>
-                <dd className="font-display text-fluid-xl font-semibold text-cream">
+              <div
+                key={s.key}
+                className="bg-void/60 px-4 py-4 backdrop-blur-sm last:col-span-2 sm:px-5 sm:last:col-span-1"
+              >
+                <dd className="display text-fluid-xl font-semibold tabular-nums text-cream">
                   {s.value.toLocaleString('en-IN')}
                   {s.suffix}
                 </dd>
+                {/* `break-words`, not `wrap-anywhere`: anywhere-breaking split
+                    "SUBSCRIBER" mid-word. */}
+                <dt className="mt-1 break-words text-fluid-xs uppercase tracking-[0.14em] text-cream/55">
+                  {s.label}
+                </dt>
               </div>
             ))}
-          </motion.dl>
+          </dl>
         </div>
 
-        {/* Slide dots */}
+        {/*
+          Slide index. A numbered rail rather than dots: it names where you are
+          in a way dots cannot, and the fill doubles as the rotation timer.
+        */}
         {images.length > 1 && (
-          <div className="mt-7 flex gap-1" role="tablist" aria-label="Hero slides">
+          <div
+            data-intro="index"
+            role="tablist"
+            aria-label="Hero slides"
+            className="mt-12 flex items-center gap-1"
+          >
             {images.map((s, i) => (
               <button
                 key={s.id}
                 type="button"
                 role="tab"
                 aria-selected={i === index}
-                aria-label={`Slide ${i + 1}`}
+                aria-label={`Slide ${i + 1} of ${images.length}`}
                 onClick={() => setIndex(i)}
-                className="group flex h-11 items-center px-1"
+                className="group flex min-h-[44px] items-center gap-2.5 px-2"
               >
                 <span
-                  className={`block h-1.5 rounded-full transition-all duration-500 ease-organic
-                              ${i === index ? 'w-10 bg-sun' : 'w-4 bg-cream/35 group-hover:bg-cream/60'}`}
+                  aria-hidden="true"
+                  className={`micro transition-colors duration-500 ${
+                    i === index ? 'text-sun' : 'text-cream/40 group-hover:text-cream/70'
+                  }`}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={`block h-px transition-all duration-cine ease-cine ${
+                    i === index ? 'w-12 bg-sun' : 'w-4 bg-cream/30 group-hover:bg-cream/55'
+                  }`}
                 />
               </button>
             ))}
@@ -238,18 +393,24 @@ export default function Hero({ onCta }) {
         )}
       </div>
 
-      {/* Organic ground edge into the next section. */}
-      <svg
+      {/*
+        Scroll cue, desktop only, and that is measured rather than an oversight.
+        On phones the hero content is 925px against a 640-915px viewport, so it
+        is already visibly cut off — a stronger "there is more" signal than a
+        label. A cue below that content lands at ~845px, under the fold on
+        every handset except the tallest.
+      */}
+      <div
         aria-hidden="true"
-        viewBox="0 0 1440 80"
-        preserveAspectRatio="none"
-        className="absolute inset-x-0 bottom-0 h-10 w-full text-canvas sm:h-16"
+        data-intro="cue"
+        className="pointer-events-none absolute right-gutter top-1/2 hidden -translate-y-1/2
+                   flex-col items-center gap-4 text-cream/45 lg:flex"
       >
-        <path
-          fill="currentColor"
-          d="M0 80h1440V34c-160 26-330 38-520 26S560 22 380 30 120 52 0 34z"
-        />
-      </svg>
+        <span className="micro [writing-mode:vertical-rl]">{t('a11y.scroll')}</span>
+        <span className="relative block h-16 w-px overflow-hidden bg-cream/20">
+          <span className="absolute inset-x-0 top-0 block h-1/2 animate-cue bg-sun" />
+        </span>
+      </div>
     </section>
   );
 }

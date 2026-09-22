@@ -1,7 +1,8 @@
 import { stats } from '../data/site';
 import { useCountUp } from '../hooks';
-import { Reveal } from '../lib/motion';
+import { EASE_CINE, motion, useReducedMotion } from '../lib/motion-react';
 import Icon from '../components/Icon';
+import FluidBackdrop from '../components/FluidBackdrop';
 
 const ICONS = {
   farmer: 'users',
@@ -17,51 +18,81 @@ const ICONS = {
  * The figures are the `data-max` values the existing markup already carries —
  * 1,000,000 farmers, 155,000 subscribers, 5,000 app downloads, 50,000 seminar
  * meetings, 460 distributors. Nothing here was invented or rounded.
+ *
+ * Presentation change: these were five small centred tiles with icon
+ * medallions, which made the single most quantitative thing on the page look
+ * like decoration. They are now set as figures — large, tabular, divided by
+ * hairlines — because a number is the strongest object a page can show and it
+ * should be allowed to be the loudest thing in its own band.
+ *
+ * `tabular-nums` matters here: proportional digits change width as the count-up
+ * runs, so each figure would jitter sideways for the whole two seconds.
  */
 function Stat({ stat, index }) {
   const [ref, value] = useCountUp(stat.value);
+  const reduce = useReducedMotion();
 
   return (
-    <Reveal
-      delay={index * 0.08}
-      className="group flex flex-col items-center gap-2 px-2 text-center"
+    <motion.div
+      className="group relative flex flex-col justify-end px-4 py-6 sm:px-5 sm:py-8"
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '0px 0px -12% 0px' }}
+      transition={{ duration: reduce ? 0.25 : 0.7, delay: reduce ? 0 : index * 0.07, ease: EASE_CINE }}
     >
+      {/*
+        The size is capped to the *widest* figure, not chosen by eye. The
+        longest string here is "10,00,000+" — eleven glyphs, about 5.5em in
+        Fraunces — and a five-column cell inside the 82rem shell gives roughly
+        230px of content width. At the `fluid-3xl` this started on, that figure
+        rendered ~330px wide and ran straight over the next column. This clamp
+        keeps it inside the cell at every breakpoint the grid uses, including
+        the 2-column phone layout where the cell is narrowest.
+      */}
       <span
-        className="mb-1 grid h-12 w-12 place-items-center rounded-full border border-cream/20
-                   text-leaf transition-all duration-500 ease-organic group-hover:border-sun/50 group-hover:text-sun"
+        ref={ref}
+        className="display block text-[clamp(1.35rem,2.2vw,2.1rem)] font-semibold tabular-nums text-cream"
       >
-        <Icon name={ICONS[stat.key] || 'leaf'} size={22} />
-      </span>
-
-      <span ref={ref} className="font-display text-fluid-2xl font-semibold text-cream tabular-nums">
         {value.toLocaleString('en-IN')}
         {stat.suffix}
       </span>
 
-      <span className="text-fluid-xs font-medium uppercase tracking-[0.14em] text-cream/60 wrap-anywhere">
+      {/* `break-words`, not `wrap-anywhere` — see the note in Hero.jsx. */}
+      <span className="mt-3 flex items-center gap-2 break-words text-fluid-xs font-semibold uppercase tracking-[0.16em] text-cream/55">
+        <Icon
+          name={ICONS[stat.key] || 'leaf'}
+          size={15}
+          className="shrink-0 text-leaf transition-colors duration-slow group-hover:text-sun"
+        />
         {stat.label}
       </span>
-    </Reveal>
+
+      {/* Underline grows on hover — the only interaction this band needs. */}
+      <span
+        aria-hidden="true"
+        className="mt-4 block h-px w-8 bg-sun/50 transition-all duration-slow ease-organic group-hover:w-full group-hover:bg-sun"
+      />
+    </motion.div>
   );
 }
 
 export default function Stats() {
   return (
-    <section className="relative overflow-hidden bg-deep py-16 sm:py-20" aria-label="Our reach">
-      <div aria-hidden="true" className="absolute inset-0 grain opacity-40" />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 blob bg-leaf/10 blur-2xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-28 -right-20 h-80 w-80 blob bg-sun/8 blur-3xl"
-      />
+    <section className="band-void relative py-16 sm:py-20" aria-label="Our reach">
+      <FluidBackdrop tone="sun" intensity={0.85} />
 
       <div className="shell relative">
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-5 lg:gap-6">
+        {/*
+          The 1px gap plus a tinted parent is what draws the dividing hairlines:
+          one rule per gap, automatically correct at every breakpoint, with no
+          border-on-every-child-except-the-last arithmetic to get wrong when the
+          grid rewraps from 5 columns to 2.
+        */}
+        <div className="grid grid-cols-2 gap-px bg-cream/12 sm:grid-cols-3 lg:grid-cols-5">
           {stats.map((s, i) => (
-            <Stat key={s.key} stat={s} index={i} />
+            <div key={s.key} className="bg-[rgb(var(--c-bg))]">
+              <Stat stat={s} index={i} />
+            </div>
           ))}
         </div>
       </div>

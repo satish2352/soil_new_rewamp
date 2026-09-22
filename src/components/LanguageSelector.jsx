@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useI18n } from '../lib/i18n';
 import { useEscape } from '../hooks';
-import { EASE } from '../lib/motion';
+import { EASE } from '../lib/motion-react';
 import Icon from './Icon';
 
 /**

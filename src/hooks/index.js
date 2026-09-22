@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { pauseSmoothScroll, resumeSmoothScroll } from '../lib/motion';
 
 /**
  * Fetches once on mount with an AbortController, and exposes a retry.
@@ -79,7 +80,14 @@ export function useCountUp(target, { duration = 1900, enabled = true } = {}) {
   return [ref, value];
 }
 
-/** Locks body scroll while a modal or mobile menu is open, without layout shift. */
+/**
+ * Locks body scroll while a modal or mobile menu is open, without layout shift.
+ *
+ * `overflow: hidden` alone is not enough once Lenis is running: Lenis drives
+ * the page from its own rAF loop and does not consult body overflow, so the
+ * page carries on scrolling underneath an open dialog. It has to be stopped
+ * explicitly and restarted on close.
+ */
 export function useScrollLock(locked) {
   useEffect(() => {
     if (!locked) return;
@@ -90,10 +98,12 @@ export function useScrollLock(locked) {
 
     body.style.overflow = 'hidden';
     if (gap > 0) body.style.paddingRight = `${gap}px`;
+    pauseSmoothScroll();
 
     return () => {
       body.style.overflow = prevOverflow;
       body.style.paddingRight = prevPad;
+      resumeSmoothScroll();
     };
   }, [locked]);
 }

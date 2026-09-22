@@ -1,10 +1,14 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import EnquiryModal from './components/EnquiryModal';
 import ExportFormModal from './components/ExportFormModal';
+import PageTransition from './components/PageTransition';
+import CursorRing from './components/CursorRing';
+import Preloader from './components/Preloader';
+import SmoothScroll from './components/SmoothScroll';
 import Home from './pages/Home';
 
 // Route-level code splitting keeps the first load to the homepage only.
@@ -20,19 +24,6 @@ const CareersPage = lazy(() => import('./pages/CareersPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
-/** Restores scroll on navigation, but leaves in-page anchors alone. */
-function ScrollToTop() {
-  const { pathname, hash } = useLocation();
-
-  useEffect(() => {
-    if (hash) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
-  }, [pathname, hash]);
-
-  return null;
-}
-
 function RouteFallback() {
   return (
     <div className="shell flex min-h-[60vh] items-center justify-center py-section">
@@ -46,6 +37,7 @@ export default function App() {
   const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [presetProduct, setPresetProduct] = useState(null);
+  const location = useLocation();
 
   const openEnquiry = useCallback((product) => {
     setPresetProduct(typeof product === 'string' ? product : null);
@@ -53,13 +45,22 @@ export default function App() {
   }, []);
 
   return (
+    <SmoothScroll>
     <div className="flex min-h-screen flex-col">
-      <ScrollToTop />
+      <Preloader />
       <Header onEnquiry={openEnquiry} />
+      <CursorRing />
 
       <main id="main" className="grow">
         <Suspense fallback={<RouteFallback />}>
-          <Routes>
+          <PageTransition>
+            {/*
+              `location` is passed explicitly rather than read from context.
+              While the outgoing page is animating out it is still mounted, and
+              a context-reading <Routes> would immediately re-render it as the
+              *new* route — so the exit would play with the wrong content.
+            */}
+            <Routes location={location}>
             <Route
               path="/"
               element={<Home onEnquiry={openEnquiry} onExport={() => setExportOpen(true)} />}
@@ -91,8 +92,9 @@ export default function App() {
             <Route path="/sub-product/:id" element={<LegacyProductRedirect />} />
             <Route path="/sub-blogs" element={<LegacyBlogRedirect />} />
 
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </PageTransition>
         </Suspense>
       </main>
 
@@ -106,6 +108,7 @@ export default function App() {
       />
       <ExportFormModal open={exportOpen} onClose={() => setExportOpen(false)} />
     </div>
+    </SmoothScroll>
   );
 }
 

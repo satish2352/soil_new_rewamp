@@ -1,86 +1,128 @@
 import { pillars } from '../data/site';
 import { useI18n } from '../lib/i18n';
-import { Reveal, motion } from '../lib/motion';
-import { SectionHeading } from '../components/ui';
+import { EASE, EASE_CINE, Reveal, motion, useReducedMotion } from '../lib/motion-react';
 
 /**
- * The four pillars. The statements are exactly the ones on the live site; the
- * presentation becomes numbered cards linked by a growing rule so the set reads
- * as one philosophy rather than four loose tiles.
+ * The four pillars.
  *
- * No icon art: the four images the rebuild had been pairing these with were
- * unrelated stock clip-art (a dry-fruit basket for "nourishment", a watermarked
- * stock tree for "leaf and roots"), served from nothing the CMS knows about.
- * The number carries the medallion instead.
+ * The statements are exactly the ones on the live site. What changed is the
+ * form: they were four equal cards in a row, which flattened a philosophy into
+ * a feature grid and read as filler. They are now a numbered editorial index —
+ * one statement per full-width row, set large, separated by hairlines, with a
+ * sticky title holding the left column.
+ *
+ * That shape does two things a card row cannot. It gives the page its first
+ * asymmetric layout after a symmetrical hero, and it lets each statement be
+ * read as a line of argument rather than scanned as a tile.
+ *
+ * No icon art: the four images this had been paired with were unrelated stock
+ * clip-art (a dry-fruit basket for "nourishment", a watermarked stock tree for
+ * "leaf and roots"), served from nothing the CMS knows about. The number
+ * carries the row instead.
  */
 export default function Pillars() {
   const { t } = useI18n();
+  const reduce = useReducedMotion();
 
   return (
-    <section className="section relative overflow-hidden" aria-labelledby="pillars-title">
+    <section className="section lift-edge relative bg-canvas" aria-labelledby="pillars-title">
+      {/*
+        Clipping lives on this layer, not on the section: `overflow: hidden` up
+        there would break the sticky title column below, because an overflow
+        container becomes the sticky element's scrollport and one that never
+        scrolls gives sticky nothing to stick to. The rounded top corner of
+        `.lift-edge` still needs the clip, so it is applied here with the same
+        radius.
+      */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-32 top-1/4 h-80 w-80 blob bg-leaf/6"
-      />
+        className="pointer-events-none absolute inset-0 overflow-hidden
+                   [border-start-end-radius:inherit] [border-start-start-radius:inherit]"
+      >
+        <div className="absolute -left-40 top-1/3 h-[26rem] w-[26rem] blob bg-leaf/6" />
+      </div>
 
-      <div className="shell">
-        <SectionHeading
-          id="pillars-title"
-          eyebrow={t('section.pillars')}
-          title="Soil Charger Technology"
-        />
-
-        <div className="relative mt-14 sm:mt-20">
-          {/* Connecting line, drawn as the row enters view. */}
-          <motion.div
-            aria-hidden="true"
-            className="absolute left-0 right-0 top-[4.5rem] hidden h-px origin-left bg-gradient-to-r
-                       from-transparent via-leaf/45 to-transparent lg:block"
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, margin: '0px 0px -15% 0px' }}
-            transition={{ duration: 1.3, ease: [0.22, 1, 0.36, 1] }}
-          />
-
-          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-            {pillars.map((p, i) => (
-              <Reveal
-                as="li"
-                key={p.n}
-                delay={i * 0.11}
-                className="group relative flex flex-col items-center rounded-[1.75rem] border border-line/70
-                           bg-surface px-6 pb-8 pt-0 text-center shadow-soft
-                           transition-all duration-500 ease-organic hover:-translate-y-2
-                           hover:border-primary/25 hover:shadow-lift"
+      <div className="shell relative grid gap-10 lg:grid-cols-12 lg:gap-14">
+        {/*
+          The title column stays put while the statements scroll past it, so the
+          four lines are read as belonging to one heading rather than as four
+          independent blocks.
+        */}
+        <div className="lg:col-span-4">
+          <div className="lg:sticky lg:top-32">
+            <Reveal as="p" className="eyebrow mb-5" duration={0.5}>
+              {t('section.pillars')}
+            </Reveal>
+            <Reveal delay={0.05}>
+              <h2
+                id="pillars-title"
+                className="display text-fluid-3xl font-semibold text-deep"
               >
-                {/* Numbered medallion straddles the connecting line. */}
-                <div
-                  className="relative -mt-10 mb-5 grid h-[5.5rem] w-[5.5rem] place-items-center rounded-full
-                             border border-line bg-canvas shadow-soft transition-transform duration-500
-                             ease-organic group-hover:scale-105 group-hover:border-leaf/50"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="font-display text-fluid-2xl font-semibold text-primary transition-transform
-                               duration-500 ease-organic group-hover:scale-110"
-                  >
-                    {p.n}
-                  </span>
-                </div>
+                Soil Charger Technology
+              </h2>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <span
+                aria-hidden="true"
+                className="mt-7 block h-px w-20 bg-gradient-to-r from-leaf to-transparent"
+              />
+            </Reveal>
+          </div>
+        </div>
 
-                <p className="text-fluid-base font-medium leading-snug text-ink wrap-anywhere">
-                  {p.text}
-                </p>
+        <ol className="lg:col-span-8">
+          {pillars.map((p, i) => (
+            <li key={p.n} className="group relative">
+              {/* The rule draws itself as the row arrives, left to right. */}
+              <motion.span
+                aria-hidden="true"
+                className="block h-px origin-left bg-line"
+                initial={reduce ? { opacity: 0 } : { scaleX: 0 }}
+                whileInView={reduce ? { opacity: 1 } : { scaleX: 1 }}
+                viewport={{ once: true, margin: '0px 0px -18% 0px' }}
+                transition={{ duration: reduce ? 0.25 : 0.9, delay: 0.05, ease: EASE_CINE }}
+              />
 
+              <div
+                className="flex items-baseline gap-5 py-7 transition-transform duration-slow ease-organic
+                           motion-safe:group-hover:translate-x-2 sm:gap-8 sm:py-9"
+              >
                 <span
                   aria-hidden="true"
-                  className="mt-5 h-0.5 w-8 rounded-full bg-leaf/40 transition-all duration-500
-                             ease-organic group-hover:w-14 group-hover:bg-sun"
+                  className="micro shrink-0 pt-2 text-muted transition-colors duration-slow group-hover:text-leaf"
+                >
+                  {p.n}
+                </span>
+
+                {/* The statement rises out of its own mask. */}
+                <span className="reveal-clip block">
+                  <motion.span
+                    className="block font-display text-fluid-xl font-semibold leading-snug text-deep wrap-anywhere
+                               transition-colors duration-slow group-hover:text-primary sm:text-fluid-2xl"
+                    initial={reduce ? { opacity: 0 } : { y: '105%' }}
+                    whileInView={reduce ? { opacity: 1 } : { y: 0 }}
+                    viewport={{ once: true, margin: '0px 0px -18% 0px' }}
+                    transition={{ duration: reduce ? 0.25 : 0.8, delay: 0.12, ease: EASE }}
+                  >
+                    {p.text}
+                  </motion.span>
+                </span>
+              </div>
+
+              {/* Closing rule under the last row, so the set reads as bounded. */}
+              {i === pillars.length - 1 && (
+                <motion.span
+                  aria-hidden="true"
+                  className="block h-px origin-left bg-line"
+                  initial={reduce ? { opacity: 0 } : { scaleX: 0 }}
+                  whileInView={reduce ? { opacity: 1 } : { scaleX: 1 }}
+                  viewport={{ once: true, margin: '0px 0px -18% 0px' }}
+                  transition={{ duration: reduce ? 0.25 : 0.9, ease: EASE_CINE }}
                 />
-              </Reveal>
-            ))}
-          </ul>
-        </div>
+              )}
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );

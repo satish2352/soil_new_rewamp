@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import photos from '../data/gallery.json';
 import videos from '../data/videos.json';
 import { useI18n } from '../lib/i18n';
-import { ImageReveal, Reveal } from '../lib/motion';
-import { Chip, SectionHeading, SmartImage } from '../components/ui';
+import { Reveal } from '../lib/motion-react';
+import { SectionHeading, SmartImage } from '../components/ui';
 import Lightbox from '../components/Lightbox';
 import Icon from '../components/Icon';
 
@@ -56,50 +56,61 @@ export default function Gallery({ tab: controlledTab, onTabChange, limit, headin
       />
 
       <div className="shell">
-        {heading ? (
-          <SectionHeading
-            id="gallery-title"
-            eyebrow={t('nav.gallery')}
-            title="your dream gallery"
-          />
-        ) : (
-          <h2 id="gallery-title" className="sr-only">
-            {t('nav.gallery')}
-          </h2>
-        )}
+        {/*
+          The tabs sit in the heading row rather than centred beneath it: they
+          are the control for this section, and putting them on the heading's
+          baseline says so, while keeping the title on the same left edge as
+          every other section on the page.
+        */}
+        {(() => {
+          const tabs = (
+            <div
+              role="tablist"
+              aria-label={t('nav.gallery')}
+              className="inline-flex gap-1.5 rounded-full border border-line bg-surface p-1.5"
+            >
+              {[
+                { key: 'photos', label: t('gallery.photos'), count: photos.length, icon: 'grid' },
+                { key: 'videos', label: t('gallery.videos'), count: videos.length, icon: 'play' },
+              ].map((x) => (
+                <button
+                  key={x.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === x.key}
+                  onClick={() => setTab(x.key)}
+                  className={`inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-fluid-sm
+                              font-semibold transition-all duration-300 ease-organic
+                              ${
+                                tab === x.key
+                                  ? 'bg-primary text-cream shadow-soft'
+                                  : 'text-ink/70 hover:text-primary'
+                              }`}
+                >
+                  <Icon name={x.icon} size={16} />
+                  {x.label}
+                  <span className="text-fluid-xs opacity-70 tabular-nums">{x.count}</span>
+                </button>
+              ))}
+            </div>
+          );
 
-        {/* Tabs */}
-        <Reveal delay={0.06} className="mt-8 flex justify-center">
-          <div
-            role="tablist"
-            aria-label={t('nav.gallery')}
-            className="inline-flex gap-1.5 rounded-full border border-line bg-surface p-1.5"
-          >
-            {[
-              { key: 'photos', label: t('gallery.photos'), count: photos.length, icon: 'grid' },
-              { key: 'videos', label: t('gallery.videos'), count: videos.length, icon: 'play' },
-            ].map((x) => (
-              <button
-                key={x.key}
-                type="button"
-                role="tab"
-                aria-selected={tab === x.key}
-                onClick={() => setTab(x.key)}
-                className={`inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-fluid-sm
-                            font-semibold transition-all duration-300 ease-organic
-                            ${
-                              tab === x.key
-                                ? 'bg-primary text-cream shadow-soft'
-                                : 'text-ink/70 hover:text-primary'
-                            }`}
-              >
-                <Icon name={x.icon} size={16} />
-                {x.label}
-                <span className="text-fluid-xs opacity-70 tabular-nums">{x.count}</span>
-              </button>
-            ))}
-          </div>
-        </Reveal>
+          return heading ? (
+            <SectionHeading
+              id="gallery-title"
+              eyebrow={t('nav.gallery')}
+              title="your dream gallery"
+              action={tabs}
+            />
+          ) : (
+            <>
+              <h2 id="gallery-title" className="sr-only">
+                {t('nav.gallery')}
+              </h2>
+              <Reveal delay={0.06}>{tabs}</Reveal>
+            </>
+          );
+        })()}
 
         {/* Masonry-style grid. A denser first tile gives the grid a focal point. */}
         {tab === 'photos' ? (
@@ -115,6 +126,7 @@ export default function Gallery({ tab: controlledTab, onTabChange, limit, headin
                   type="button"
                   onClick={() => setLightbox(i)}
                   aria-label={`${t('gallery.openImage')} ${i + 1}`}
+                  data-cursor="view"
                   className="group relative block h-full w-full overflow-hidden rounded-2xl
                              border border-line/60 shadow-soft transition-all duration-500 ease-organic
                              hover:-translate-y-1 hover:shadow-lift focus-visible:-translate-y-1"
@@ -147,6 +159,7 @@ export default function Gallery({ tab: controlledTab, onTabChange, limit, headin
                   type="button"
                   onClick={() => setLightbox(i)}
                   aria-label={t('gallery.playVideo')}
+                  data-cursor="view"
                   className="group relative block w-full overflow-hidden rounded-2xl border border-line/60
                              shadow-soft transition-all duration-500 ease-organic hover:-translate-y-1.5
                              hover:shadow-lift focus-visible:-translate-y-1.5"
@@ -176,7 +189,7 @@ export default function Gallery({ tab: controlledTab, onTabChange, limit, headin
         )}
 
         {limit && (
-          <Reveal delay={0.1} className="mt-12 text-center">
+          <Reveal delay={0.1} className="mt-12">
             <Link to={`/gallery?tab=${tab}`} className="btn-primary">
               {t('cta.viewMore')}
               <Icon name="arrowRight" size={18} />

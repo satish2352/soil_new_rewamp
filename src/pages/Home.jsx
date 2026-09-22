@@ -9,6 +9,7 @@ import Products from '../sections/Products';
 import CareerTeaser from '../sections/CareerTeaser';
 import Articles from '../sections/Articles';
 import Stats from '../sections/Stats';
+import Ticker from '../sections/Ticker';
 import Testimonials from '../sections/Testimonials';
 import Team from '../sections/Team';
 import Certification from '../sections/Certification';
@@ -34,9 +35,11 @@ export default function Home({ onEnquiry, onExport }) {
       <About compact />
       <VisionMission />
       <Gallery limit={9} />
-      {/* Products and Stats form one deep-green block: solutions, then proof. */}
-      <Products limit={8} tone="dark" />
+      {/* Products and Stats form one deep block: solutions, then proof. */}
+      <Products limit={8} tone="dark" layout="scene" />
       <Stats />
+      {/* Moving seam out of the deep block and into the light half. */}
+      <Ticker />
       <CareerTeaser />
       <Articles limit={7} />
       <Testimonials />

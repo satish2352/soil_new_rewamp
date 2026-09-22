@@ -1,24 +1,29 @@
 import { iso } from '../data/site';
 import { useI18n } from '../lib/i18n';
-import { ImageReveal, Reveal } from '../lib/motion';
+import { ImageReveal, LineReveal, Reveal } from '../lib/motion-react';
+import MagneticButton from '../components/MagneticButton';
 import Icon from '../components/Icon';
+import FluidBackdrop from '../components/FluidBackdrop';
 
 /**
  * Trust band. The certification wording and the two-paragraph company statement
  * are reproduced exactly as the live site states them.
+ *
+ * The certification line is the one claim on the page a prospective distributor
+ * actually checks, so it is set as a display line rather than as a section
+ * title in a card — and the mark sits beside it at size instead of shrunk into
+ * a column. The CTA is the closing action of the whole page, which is why it
+ * gets the magnetic treatment.
  */
 export default function Certification({ onEnquiry }) {
   const { t } = useI18n();
 
   return (
-    <section className="band-dark section relative overflow-hidden" aria-labelledby="iso-title">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-32 -top-20 h-[22rem] w-[22rem] blob bg-sun/8"
-      />
+    <section className="band-void section relative overflow-hidden" aria-labelledby="iso-title">
+      <FluidBackdrop tone="earth" intensity={0.8} />
 
-      <div className="shell grid items-center gap-10 lg:grid-cols-12 lg:gap-14">
-        <ImageReveal className="mx-auto max-w-[18rem] lg:col-span-4 lg:max-w-none">
+      <div className="shell relative grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
+        <ImageReveal className="mx-auto max-w-[16rem] lg:col-span-4 lg:max-w-none" from="left">
           <img
             src={iso.image}
             alt="ISO 9001:2008 certification mark"
@@ -29,34 +34,40 @@ export default function Certification({ onEnquiry }) {
         </ImageReveal>
 
         <div className="lg:col-span-8">
-          <Reveal as="p" className="eyebrow mb-4">
+          <Reveal as="p" className="eyebrow mb-5" duration={0.5}>
             <Icon name="award" size={15} />
             Certification
           </Reveal>
 
-          <Reveal delay={0.05}>
-            <h2 id="iso-title" className="font-display text-fluid-3xl font-semibold text-deep">
-              {iso.heading}
-              <span className="mt-1 block text-fluid-xl font-normal tracking-[0.1em] text-primary">
-                {iso.subheading}
-              </span>
-            </h2>
-          </Reveal>
+          {/*
+            Split across two lines so the certification number lands on its own
+            line at display size — it is the part that carries the weight, and
+            wrapped into a paragraph it reads as fine print.
+          */}
+          <LineReveal
+            as="h2"
+            id="iso-title"
+            lines={[iso.heading, iso.subheading]}
+            className="display text-fluid-3xl font-semibold text-cream"
+            lineClassName="wrap-anywhere"
+            accentIndex={1}
+            accentClassName="text-sun font-normal tracking-[0.06em]"
+          />
 
-          <div className="mt-7 max-w-prose space-y-4">
+          <div className="mt-8 max-w-prose space-y-5">
             {iso.paragraphs.map((p, i) => (
               <Reveal key={p} delay={0.1 + i * 0.06}>
-                <p className="text-fluid-base leading-relaxed text-ink/80 wrap-anywhere">{p}</p>
+                <p className="text-fluid-base leading-relaxed text-muted wrap-anywhere">{p}</p>
               </Reveal>
             ))}
           </div>
 
           {onEnquiry && (
-            <Reveal delay={0.25} className="mt-8">
-              <button type="button" onClick={onEnquiry} className="btn-primary">
+            <Reveal delay={0.25} className="mt-10">
+              <MagneticButton onClick={onEnquiry} className="btn-primary btn-sweep !px-8 !py-4">
                 {t('cta.sendEnquiry')}
                 <Icon name="arrowRight" size={18} />
-              </button>
+              </MagneticButton>
             </Reveal>
           )}
         </div>

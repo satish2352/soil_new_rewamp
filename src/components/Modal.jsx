@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEscape, useFocusTrap, useScrollLock } from '../hooks';
 import { useI18n } from '../lib/i18n';
 import Icon from './Icon';
-import { EASE } from '../lib/motion';
+import { EASE } from '../lib/motion-react';
 
 /**
  * Accessible dialog: focus trap, Escape to close, scroll lock, backdrop click.

@@ -89,6 +89,7 @@ const STRINGS = {
 
     'blog.readArticle': 'Read article',
     'blog.allArticles': 'All articles',
+    'blog.featured': 'Featured',
     'blog.backToBlog': 'Back to all articles',
     'blog.search': 'Search articles',
     'blog.noResults': 'No articles match your search.',
@@ -156,6 +157,11 @@ const STRINGS = {
     'a11y.loading': 'Loading',
     'a11y.error': 'Could not load this section.',
     'a11y.retry': 'Try again',
+    'a11y.scroll': 'Scroll',
+    'section.milestones': 'Milestones',
+    'a11y.explore': 'Explore',
+    'a11y.view': 'View',
+    'a11y.drag': 'Drag',
   },
 
   mr: {
@@ -228,6 +234,7 @@ const STRINGS = {
 
     'blog.readArticle': 'लेख वाचा',
     'blog.allArticles': 'सर्व लेख',
+    'blog.featured': 'निवडक',
     'blog.backToBlog': 'सर्व लेखांकडे परत',
     'blog.search': 'लेख शोधा',
     'blog.noResults': 'तुमच्या शोधाशी जुळणारे लेख नाहीत.',
@@ -295,6 +302,11 @@ const STRINGS = {
     'a11y.loading': 'लोड होत आहे',
     'a11y.error': 'हा विभाग लोड होऊ शकला नाही.',
     'a11y.retry': 'पुन्हा प्रयत्न करा',
+    'a11y.scroll': 'स्क्रोल करा',
+    'section.milestones': 'टप्पे',
+    'a11y.explore': 'पाहा',
+    'a11y.view': 'पाहा',
+    'a11y.drag': 'ओढा',
   },
 
   hi: {
@@ -367,6 +379,7 @@ const STRINGS = {
 
     'blog.readArticle': 'लेख पढ़ें',
     'blog.allArticles': 'सभी लेख',
+    'blog.featured': 'विशेष',
     'blog.backToBlog': 'सभी लेखों पर वापस',
     'blog.search': 'लेख खोजें',
     'blog.noResults': 'आपकी खोज से मेल खाने वाले लेख नहीं हैं।',
@@ -434,6 +447,11 @@ const STRINGS = {
     'a11y.loading': 'लोड हो रहा है',
     'a11y.error': 'यह अनुभाग लोड नहीं हो सका।',
     'a11y.retry': 'पुनः प्रयास करें',
+    'a11y.scroll': 'स्क्रॉल करें',
+    'section.milestones': 'पड़ाव',
+    'a11y.explore': 'देखें',
+    'a11y.view': 'देखें',
+    'a11y.drag': 'खींचें',
   },
 };
 

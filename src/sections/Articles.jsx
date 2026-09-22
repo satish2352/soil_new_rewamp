@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import blogs from '../data/blogs.json';
 import { useI18n } from '../lib/i18n';
-import { ImageReveal, Reveal } from '../lib/motion';
+import { ImageReveal, Reveal, motion, useFrameParallax } from '../lib/motion-react';
 import { Chip, SectionHeading, SmartImage } from '../components/ui';
 import Icon from '../components/Icon';
 
@@ -15,30 +15,41 @@ import Icon from '../components/Icon';
  */
 export function ArticleCard({ post, index = 0, featured = false }) {
   const { t } = useI18n();
+  // Called unconditionally — hooks cannot sit behind the `featured` branch.
+  const parallax = useFrameParallax({ distance: 10, scale: 1.2 });
 
   if (featured) {
     return (
       <Reveal
         as="article"
         className="group relative overflow-hidden rounded-[2rem] border border-line/70 bg-surface
-                   shadow-soft backdrop-blur-sm transition-all duration-500 ease-organic
-                   hover:border-primary/25 hover:shadow-lift lg:grid lg:grid-cols-2"
+                   shadow-soft transition-all duration-500 ease-organic
+                   hover:border-primary/30 hover:shadow-cine lg:grid lg:grid-cols-2"
       >
-        <ImageReveal className="h-56 lg:h-full">
-          <SmartImage
-            src={post.image}
-            alt=""
-            ratio="auto"
-            className="!h-full"
-            imgClassName="transition-transform duration-700 ease-organic group-hover:scale-[1.04]"
-          />
+        <ImageReveal className="h-56 lg:h-full" from="left">
+          {/*
+            The featured image is the largest on the page, so it is the one
+            that most benefits from sitting behind the frame rather than in it.
+            The inner layer is scaled past its box to cover the drift.
+          */}
+          <div ref={parallax.ref} className="h-full w-full overflow-hidden">
+            <motion.div style={parallax.style} className="h-full w-full">
+              <SmartImage
+                src={post.image}
+                alt=""
+                ratio="auto"
+                className="!h-full"
+                imgClassName="transition-transform duration-[900ms] ease-organic group-hover:scale-[1.04]"
+              />
+            </motion.div>
+          </div>
         </ImageReveal>
 
         <div className="flex flex-col justify-center p-7 sm:p-10">
-          <span className="eyebrow mb-4">{t('section.articles')}</span>
+          <span className="eyebrow mb-5">{t('blog.featured')}</span>
           <h3
             lang={post.language}
-            className="font-display text-fluid-2xl font-semibold leading-snug text-deep wrap-anywhere"
+            className="display text-fluid-2xl font-semibold leading-snug text-deep wrap-anywhere"
           >
             <Link to={`/blogs/${post.id}`} className="after:absolute after:inset-0">
               {post.title}
@@ -52,12 +63,12 @@ export function ArticleCard({ post, index = 0, featured = false }) {
               {post.excerpt}
             </p>
           )}
-          <span className="mt-6 inline-flex items-center gap-2 text-fluid-sm font-semibold text-primary">
+          <span className="mt-7 inline-flex items-center gap-2 text-fluid-sm font-semibold text-primary">
             {t('cta.readMore')}
             <Icon
               name="arrowRight"
               size={17}
-              className="transition-transform duration-300 group-hover:translate-x-1.5"
+              className="transition-transform duration-300 group-hover:translate-x-2"
             />
           </span>
         </div>
@@ -71,48 +82,41 @@ export function ArticleCard({ post, index = 0, featured = false }) {
       delay={Math.min(index, 6) * 0.06}
       className="group relative flex flex-col overflow-hidden rounded-[1.5rem] border border-line/70
                  bg-surface shadow-soft transition-all duration-500 ease-organic
-                 hover:-translate-y-2 hover:border-primary/25 hover:shadow-lift"
+                 hover:-translate-y-2 hover:border-primary/30 hover:shadow-cine"
     >
-      <div className="overflow-hidden">
+      <ImageReveal className="h-44">
         <SmartImage
           src={post.image}
           alt=""
-          ratio="16 / 10"
-          imgClassName="transition-transform duration-700 ease-organic group-hover:scale-[1.07]"
+          ratio="auto"
+          className="!h-full"
+          imgClassName="transition-transform duration-[900ms] ease-organic group-hover:scale-[1.06]"
         />
-      </div>
+      </ImageReveal>
 
-      <div className="flex grow flex-col p-5">
-        <span className="mb-2.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-leaf/12 px-2.5 py-1
-                         text-[0.68rem] font-semibold uppercase tracking-wide text-primary">
-          <Icon name="leaf" size={12} />
-          {post.language === 'mr' ? 'मराठी' : 'English'}
-        </span>
-
+      <div className="flex grow flex-col p-6">
         <h3
           lang={post.language}
-          className="font-display text-fluid-base font-semibold leading-snug text-deep wrap-anywhere"
+          className="font-display text-fluid-lg font-semibold leading-snug text-deep wrap-anywhere"
         >
           <Link to={`/blogs/${post.id}`} className="after:absolute after:inset-0">
             {post.title}
           </Link>
         </h3>
-
         {post.excerpt && (
           <p
             lang={post.language}
-            className="mt-2 line-clamp-3 text-fluid-sm leading-relaxed text-muted wrap-anywhere"
+            className="mt-3 line-clamp-3 text-fluid-sm leading-relaxed text-muted wrap-anywhere"
           >
             {post.excerpt}
           </p>
         )}
-
-        <span className="mt-auto pt-4 inline-flex items-center gap-1.5 text-fluid-xs font-semibold text-primary">
+        <span className="mt-auto inline-flex items-center gap-2 pt-5 text-fluid-xs font-semibold text-primary">
           {t('cta.readMore')}
           <Icon
             name="arrowRight"
             size={15}
-            className="transition-transform duration-300 group-hover:translate-x-1"
+            className="transition-transform duration-300 group-hover:translate-x-1.5"
           />
         </span>
       </div>
@@ -120,10 +124,82 @@ export function ArticleCard({ post, index = 0, featured = false }) {
   );
 }
 
-export default function Articles({ limit, showFilter = false, heading = true }) {
+/**
+ * One article as a row: index, title, language tag, arrow.
+ *
+ * The homepage uses these rather than a third grid of cards. By that point the
+ * page has already shown product cards and career cards, and a third set would
+ * read as the same component with different text in it. A hairline list also
+ * fits six headlines in the height two rows of cards would need, which matters
+ * when the titles are the content.
+ */
+function ArticleRow({ post, index }) {
+  const { t } = useI18n();
+
+  return (
+    <Reveal
+      as="li"
+      delay={Math.min(index, 6) * 0.05}
+      className="group relative border-t border-line last:border-b"
+    >
+      <Link
+        to={`/blogs/${post.id}`}
+        className="flex items-center gap-5 py-6 transition-transform duration-slow ease-organic
+                   motion-safe:group-hover:translate-x-2 sm:gap-8"
+      >
+        <span aria-hidden="true" className="micro shrink-0 text-muted">
+          {String(index + 1).padStart(2, '0')}
+        </span>
+
+        <span className="min-w-0 grow">
+          <span
+            lang={post.language}
+            className="block font-display text-fluid-lg font-semibold leading-snug text-cream
+                       transition-colors duration-slow group-hover:text-sun wrap-anywhere"
+          >
+            {post.title}
+          </span>
+          {/*
+            No `block` alongside `line-clamp-1`: the clamp works by switching
+            the element to `-webkit-box`, and a `display` utility next to it
+            wins the cascade and silently turns the clamp off — the row then
+            ran to two lines and the rows stopped sharing a height.
+          */}
+          <span
+            lang={post.language}
+            className="mt-1.5 line-clamp-1 text-fluid-sm text-muted wrap-anywhere"
+          >
+            {post.excerpt}
+          </span>
+        </span>
+
+        <span
+          aria-hidden="true"
+          className="hidden shrink-0 rounded-full border border-line px-3 py-1 text-fluid-xs
+                     font-semibold uppercase tracking-wide text-muted sm:inline-block"
+        >
+          {post.language === 'mr' ? 'मराठी' : 'EN'}
+        </span>
+
+        <Icon
+          name="arrowRight"
+          size={18}
+          className="shrink-0 text-muted transition-all duration-slow ease-organic
+                     group-hover:translate-x-1.5 group-hover:text-sun"
+        />
+        <span className="sr-only">{t('cta.readMore')}</span>
+      </Link>
+    </Reveal>
+  );
+}
+
+export default function Articles({ limit, showFilter = false, heading = true, layout }) {
   const { t } = useI18n();
   const [lang, setLang] = useState('all');
   const [query, setQuery] = useState('');
+
+  // The homepage gets the list; the full /blogs catalogue gets the grid.
+  const mode = layout || (limit ? 'list' : 'grid');
 
   const filtered = useMemo(() => {
     let list = blogs;
@@ -139,20 +215,41 @@ export default function Articles({ limit, showFilter = false, heading = true }) 
 
   const shown = limit ? filtered.slice(0, limit) : filtered;
   const [featured, ...rest] = shown;
+  const dark = mode === 'list';
 
   return (
-    <section className="section relative overflow-hidden" aria-labelledby="articles-title">
+    <section
+      className={`section relative overflow-hidden ${dark ? 'band-dark' : ''}`}
+      aria-labelledby="articles-title"
+    >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-32 top-24 h-[22rem] w-[22rem] blob bg-sun/7"
+        className={`pointer-events-none absolute -left-32 top-24 h-[22rem] w-[22rem] blob ${
+          dark ? 'bg-sun/8 blur-3xl' : 'bg-sun/7'
+        }`}
       />
 
-      <div className="shell">
+      <div className="shell relative">
         {heading ? (
           <SectionHeading
             id="articles-title"
+            tone={dark ? 'dark' : 'light'}
             eyebrow={t('section.articles')}
-            title="Field notes from our agronomists"
+            /*
+              Previously "Field notes from our agronomists". That asserted the
+              company employs agronomists, which nothing on the site states —
+              exactly the kind of invented claim the content rule rules out.
+              This says only what is true of the catalogue.
+            */
+            title="Notes from the field"
+            action={
+              limit && blogs.length > limit ? (
+                <Link to="/blogs" className="btn-ghost btn-sweep hover:text-deep">
+                  {t('blog.allArticles')}
+                  <Icon name="arrowRight" size={17} />
+                </Link>
+              ) : null
+            }
           />
         ) : (
           <h2 id="articles-title" className="sr-only">
@@ -161,7 +258,10 @@ export default function Articles({ limit, showFilter = false, heading = true }) 
         )}
 
         {showFilter && (
-          <Reveal delay={0.06} className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Reveal
+            delay={0.06}
+            className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          >
             <div role="group" aria-label={t('blog.allArticles')} className="flex flex-wrap gap-2">
               {[
                 { key: 'all', label: t('blog.allArticles') },
@@ -193,7 +293,23 @@ export default function Articles({ limit, showFilter = false, heading = true }) 
         )}
 
         {shown.length === 0 ? (
-          <p className="mt-12 text-center text-fluid-base text-muted">{t('blog.noResults')}</p>
+          <p className="mt-12 text-fluid-base text-muted">{t('blog.noResults')}</p>
+        ) : mode === 'list' ? (
+          <>
+            {featured && (
+              <div className="mt-12 band-light">
+                <ArticleCard post={featured} featured />
+              </div>
+            )}
+
+            {rest.length > 0 && (
+              <ul className="mt-12">
+                {rest.map((post, i) => (
+                  <ArticleRow key={post.id} post={post} index={i} />
+                ))}
+              </ul>
+            )}
+          </>
         ) : (
           <>
             {featured && (
@@ -210,15 +326,6 @@ export default function Articles({ limit, showFilter = false, heading = true }) 
               </div>
             )}
           </>
-        )}
-
-        {limit && blogs.length > limit && (
-          <Reveal delay={0.1} className="mt-12 text-center">
-            <Link to="/blogs" className="btn-primary">
-              {t('blog.allArticles')}
-              <Icon name="arrowRight" size={18} />
-            </Link>
-          </Reveal>
         )}
       </div>
     </section>
