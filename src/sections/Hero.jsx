@@ -1,7 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import staticSlides from '../data/slides.json';
-import { getSlides } from '../lib/api';
-import { useApiData } from '../hooks';
 import { hero, stats } from '../data/site';
 import { useI18n } from '../lib/i18n';
 import {
@@ -16,33 +13,22 @@ import {
   useGsap,
   usePointerDepth,
 } from '../lib/motion';
-import { SmartImage } from '../components/ui';
-import { hasLocalCopy } from '../lib/images';
+import { HERO_SCENES } from '../components/HeroScenes';
 import MagneticButton from '../components/MagneticButton';
 import Icon from '../components/Icon';
 
 const ROTATE_MS = 6500;
 
-/** Keeps only slides whose image the mirror or the server can actually serve. */
-function mapSlides(rows) {
-  const usable = (rows || [])
-    .filter((r) => r.photo_one && r.photopath && !r.photopath.endsWith('/'))
-    .map((r) => ({ id: r.id, image: r.photopath }))
-    .filter((s) => hasLocalCopy(s.image));
-  return usable.length ? usable : null;
-}
-
 /**
  * Hero — the opening scene.
  *
  * Content is unchanged and is the client's: their headline (typo and all),
- * their sub-line, their Shop Now CTA, the cover photos the CMS already serves,
- * and three figures drawn from the same data as the stats band.
+ * their sub-line, their Shop Now CTA, and three figures drawn from the same data as the stats band.
  *
  * Five layers, as the brief specifies:
  *
  *   1  designed backdrop, drawn in CSS          data-depth 0.05
- *   2  the CMS cover photographs                data-depth 0.08
+ *   2  illustrated banner scenes (HeroScenes)    data-depth 0.08
  *   3  the headline and copy                    data-depth 0.02
  *   4  scroll-driven camera push and veil
  *   5  pointer parallax across all of the above
@@ -66,15 +52,16 @@ export default function Hero({ onCta }) {
   // Layer 5: pointer parallax. Reads `data-depth` off descendants.
   const depthRef = usePointerDepth({ strength: 1 });
 
-  // Live cover slides; the API already filters records with no photo.
-  const { data: slides } = useApiData(getSlides, staticSlides, mapSlides);
-  const images = slides?.length ? slides : [];
+  // The CMS cover posters are packshots with their own headlines, so the
+  // slider uses illustrated scenes made for this slot instead.
+  const images = HERO_SCENES;
 
+  // Keyed on `index`, so picking a slide by hand restarts its full dwell time.
   useEffect(() => {
     if (images.length < 2) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % images.length), ROTATE_MS);
-    return () => clearInterval(id);
-  }, [images.length]);
+    const id = setTimeout(() => setIndex((i) => (i + 1) % images.length), ROTATE_MS);
+    return () => clearTimeout(id);
+  }, [index, images.length]);
 
   const scope = useGsap((ctx, root) => {
     const q = gsap.utils.selector(root);
@@ -92,7 +79,7 @@ export default function Hero({ onCta }) {
     /*
       Split per line and concatenate, so the two lines share one continuous
       stagger while keeping their own colour. Splitting the whole headline as
-      one string would flatten "FARMER WALTHIER" back to the body colour.
+      one string would flatten the second line back to the body colour.
     */
     const chars = lineRefs.current
       .filter(Boolean)
@@ -216,31 +203,16 @@ export default function Hero({ onCta }) {
           />
         </div>
 
-        {/* Layer 2 — the cover photographs, on a nearer plane. */}
+        {/* Layer 2 — the illustrated scenes, on a nearer plane. */}
         <div data-depth={DEPTH.content} className="absolute inset-[-3%]">
-          {images.map((s, i) => (
+          {images.map(({ id, Scene }, i) => (
             <div
-              key={s.id}
-              className="absolute inset-0 transition-opacity duration-[1600ms] ease-in-out"
-              style={{ opacity: i === index ? 1 : 0 }}
+              key={id}
+              className={`absolute inset-0 transition-[opacity,transform] ease-in-out ${
+                i === index ? 'scale-105 opacity-100 duration-[1600ms,7000ms]' : 'scale-100 opacity-0 duration-[1600ms]'
+              }`}
             >
-              {/*
-                These covers are CMS *posters* — packshots carrying their own
-                headlines in Devanagari, not atmospheric photography. At full
-                fidelity behind a hero headline they compete with it: two sets
-                of large type fighting for the same space. A slight blur and
-                desaturation demotes them to the texture they are being used
-                as. The products themselves are shown properly further down.
-              */}
-              <SmartImage
-                src={s.image}
-                alt=""
-                ratio="auto"
-                loading={i === 0 ? 'eager' : 'lazy'}
-                fallback="none"
-                className="!h-full"
-                imgClassName="object-cover blur-[3px] saturate-[0.85] scale-105"
-              />
+              <Scene />
             </div>
           ))}
         </div>
@@ -251,14 +223,13 @@ export default function Hero({ onCta }) {
       {/* Legibility wash — dense where the copy sits, opening up to the right. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-20 bg-gradient-to-r from-void via-void/92 to-void/45"
+        className="absolute inset-0 -z-20 bg-gradient-to-r from-void/95 via-void/65 to-transparent"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 -z-20 h-3/5 bg-gradient-to-t from-void via-void/70 to-transparent"
+        className="absolute inset-x-0 bottom-0 -z-20 h-2/5 bg-gradient-to-t from-void/90 via-void/40 to-transparent"
       />
-      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-void/25" />
-
+      
       {/* The closing veil: the scene dims as it hands off to the next section. */}
       <div aria-hidden="true" data-veil className="absolute inset-0 -z-10 bg-void opacity-0" />
 
@@ -279,7 +250,10 @@ export default function Hero({ onCta }) {
             headline splits correctly too. `splitText` keeps the original in an
             sr-only span and hides the pieces from assistive tech.
           */}
-          <h1 data-intro="headline" className="display text-fluid-5xl font-semibold text-cream">
+          <h1
+            data-intro="headline"
+            className="display text-[clamp(2.4rem,1.5rem+3vw,4.25rem)] font-semibold text-cream"
+          >
             {/*
               The accessible copy is the whole headline as one string. The
               visible lines are aria-hidden because `splitText` replaces each

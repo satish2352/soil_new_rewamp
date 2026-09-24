@@ -34,14 +34,14 @@ export default function CareerTeaser() {
           }
         />
 
-        <ul className="mt-14 grid gap-5 sm:grid-cols-3 lg:gap-6">
+        <ul className="mt-10 grid gap-4 sm:grid-cols-3 lg:gap-5">
           {TRACKS.map((track, i) => (
             <Reveal
               as="li"
               key={track.key}
               delay={i * 0.09}
               className="group relative flex flex-col overflow-hidden rounded-[1.5rem] border
-                         border-line/70 bg-surface p-8 shadow-soft transition-all duration-500
+                         border-line/70 bg-surface p-6 shadow-soft transition-all duration-500
                          ease-organic hover:-translate-y-2 hover:border-primary/30 hover:shadow-cine"
             >
               {/*
@@ -49,25 +49,25 @@ export default function CareerTeaser() {
                 the reader these are three of a set, which a floating icon does
                 not, and it costs nothing to render.
               */}
-              <div className="mb-8 flex items-start justify-between">
+              <div className="mb-5 flex items-center justify-between">
                 <span aria-hidden="true" className="micro text-muted">
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <span
-                  className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary
+                  className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary
                              transition-all duration-slow ease-organic group-hover:bg-primary group-hover:text-cream"
                 >
-                  <Icon name={track.icon} size={22} />
+                  <Icon name={track.icon} size={19} />
                 </span>
               </div>
 
-              <h3 className="font-display text-fluid-xl font-semibold leading-snug text-deep wrap-anywhere">
+              <h3 className="font-display text-fluid-lg font-semibold leading-snug text-deep wrap-anywhere">
                 <Link to={`/careers${track.hash}`} className="after:absolute after:inset-0">
                   {t(`career.${track.key}`)}
                 </Link>
               </h3>
 
-              <span className="mt-auto inline-flex items-center gap-2 pt-8 text-fluid-sm font-semibold text-primary">
+              <span className="mt-auto inline-flex items-center gap-2 pt-5 text-fluid-sm font-semibold text-primary">
                 {t('cta.apply')}
                 <Icon
                   name="arrowRight"

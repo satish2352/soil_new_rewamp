@@ -105,8 +105,20 @@ export default function About({ compact = false }) {
             className="display mb-8 text-fluid-3xl font-semibold text-deep"
           />
 
+          {/*
+            On the home page the founder's letter is a teaser: the opening is
+            shown and fades out, and "Read More" leads to the full letter.
+          */}
           <Reveal delay={0.1}>
-            <RichText html={about.html} className="max-w-prose" />
+            <div
+              className={
+                compact
+                  ? 'max-h-[17rem] overflow-hidden [mask-image:linear-gradient(to_bottom,black_55%,transparent)]'
+                  : undefined
+              }
+            >
+              <RichText html={about.html} className="max-w-prose" />
+            </div>
           </Reveal>
 
           {/*
@@ -114,7 +126,7 @@ export default function About({ compact = false }) {
             hairline rather than a bordered list, so the timeline reads as part
             of the prose column instead of as another component dropped into it.
           */}
-          <div className="mt-14">
+          <div className={compact ? 'mt-10' : 'mt-14'}>
             <Reveal as="p" className="micro mb-6 text-muted" duration={0.5}>
               {t('section.milestones')}
             </Reveal>

@@ -38,12 +38,12 @@ export default function Footer({ onEnquiry }) {
       <FluidBackdrop tone="leaf" intensity={0.7} />
 
       {/* ------------------------------------------------------- sign-off */}
-      <div className="shell relative border-b border-line/60 py-section">
+      <div className="shell relative border-b border-line/60 py-10 lg:py-12">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
           <LineReveal
             as="p"
             lines={[company.tagline]}
-            className="display max-w-3xl text-fluid-3xl font-semibold text-cream"
+            className="display max-w-3xl text-fluid-2xl font-semibold text-cream"
             lineClassName="wrap-anywhere"
           />
 

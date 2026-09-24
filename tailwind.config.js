@@ -73,16 +73,16 @@ export default {
         'fluid-base': 'clamp(1rem, 0.95rem + 0.25vw, 1.09rem)',
         'fluid-lg': 'clamp(1.13rem, 1.05rem + 0.4vw, 1.31rem)',
         'fluid-xl': 'clamp(1.35rem, 1.2rem + 0.7vw, 1.75rem)',
-        'fluid-2xl': 'clamp(1.7rem, 1.4rem + 1.4vw, 2.6rem)',
-        'fluid-3xl': 'clamp(2.1rem, 1.6rem + 2.3vw, 3.6rem)',
-        'fluid-4xl': 'clamp(2.6rem, 1.8rem + 3.6vw, 5.2rem)',
+        'fluid-2xl': 'clamp(1.6rem, 1.35rem + 1vw, 2.15rem)',
+        'fluid-3xl': 'clamp(1.9rem, 1.5rem + 1.6vw, 2.85rem)',
+        'fluid-4xl': 'clamp(2.25rem, 1.6rem + 2.4vw, 3.9rem)',
         /*
           Editorial tier. These are the only sizes allowed to dominate a
           viewport — hero, one pinned scene heading, the closing CTA. Their
           lower bound stays modest so a 320px phone never gets a headline
           taller than its own thumb.
         */
-        'fluid-5xl': 'clamp(2.9rem, 1.7rem + 5.4vw, 7rem)',
+        'fluid-5xl': 'clamp(2.6rem, 1.5rem + 4.2vw, 5.75rem)',
         'fluid-6xl': 'clamp(3.2rem, 1.4rem + 8vw, 10rem)',
       },
       letterSpacing: {
@@ -90,9 +90,9 @@ export default {
         tightest: '-0.045em',
       },
       spacing: {
-        section: 'clamp(3.5rem, 2rem + 6vw, 8rem)',
+        section: 'clamp(3rem, 1.75rem + 3.6vw, 5.5rem)',
         // A deliberately taller rhythm for scenes that need room to breathe.
-        scene: 'clamp(5rem, 3rem + 9vw, 11rem)',
+        scene: 'clamp(3.75rem, 2.25rem + 5vw, 7.5rem)',
         // Declared in index.css so full-bleed CSS can reuse the exact value.
         gutter: 'var(--gutter)',
       },

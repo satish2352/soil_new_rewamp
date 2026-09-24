@@ -25,7 +25,7 @@ export default function Home({ onEnquiry, onExport }) {
     <>
       <Seo
         title={null}
-        description="SOIL Is HEALTHIER, FARMER WALTHIER. Soil Charger Technology is an ISO 9001:2008 certified organic farming group from Nashik, Maharashtra."
+        description="Healthier Soil, Wealthier Farmers. Soil Charger Technology is an ISO 9001:2008 certified organic farming group from Nashik, Maharashtra."
         path="/"
       />
 
@@ -36,12 +36,12 @@ export default function Home({ onEnquiry, onExport }) {
       <VisionMission />
       <Gallery limit={9} />
       {/* Products and Stats form one deep block: solutions, then proof. */}
-      <Products limit={8} tone="dark" layout="scene" />
+      <Products limit={8} tone="dark" layout="rail" />
       <Stats />
       {/* Moving seam out of the deep block and into the light half. */}
       <Ticker />
       <CareerTeaser />
-      <Articles limit={7} />
+      <Articles limit={5} />
       <Testimonials />
       <Team />
       <Certification onEnquiry={onEnquiry} />

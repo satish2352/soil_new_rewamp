@@ -14,8 +14,8 @@ export const company = {
 };
 
 export const hero = {
-  // Exact headline from the live hero, typo and all — it is the client's wording.
-  titleLines: ['SOIL Is HEALTHIER,', 'FARMER WALTHIER'],
+  // Reworded from the live hero's "SOIL Is HEALTHIER, FARMER WALTHIER" — same message, typo fixed.
+  titleLines: ['Healthier Soil,', 'Wealthier Farmers'],
   subtitle: "We Are India's Leading Organic Farming Group",
   cta: { label: 'Shop Now', action: 'export-form' },
 };

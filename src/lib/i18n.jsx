@@ -56,8 +56,8 @@ const STRINGS = {
     'cta.viewAll': 'View all',
     'cta.close': 'Close',
 
-    'section.pillars': '4-piller Of',
-    'section.principles': '3-Principle Of',
+    'section.pillars': '4 Pillars of',
+    'section.principles': '3 Principles of',
     'section.about': 'About us',
     'section.vision': 'Vision',
     'section.mission': 'Mission',

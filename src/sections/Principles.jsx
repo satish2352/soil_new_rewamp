@@ -81,7 +81,7 @@ export default function Principles() {
               by a live region below, so a screen reader is told the step
               changed instead of being handed a bare digit.
             */}
-            <div className="relative mt-12 hidden h-60 lg:block" aria-hidden="true">
+            <div className="relative mt-10 hidden h-52 lg:block" aria-hidden="true">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={current.key}
@@ -91,7 +91,7 @@ export default function Principles() {
                   transition={{ duration: reduce ? 0.2 : DUR.slow, ease: EASE_CINE }}
                   className="absolute inset-0"
                 >
-                  <span className="display block text-[6rem] font-semibold leading-none text-sun/25">
+                  <span className="display block text-[4.5rem] font-semibold leading-none text-sun/25">
                     {String(active + 1).padStart(2, '0')}
                   </span>
                   <p className="mt-3 font-display text-fluid-2xl font-semibold text-cream">
@@ -131,7 +131,7 @@ export default function Principles() {
             return (
               <li
                 key={p.key}
-                className="border-t border-line py-10 first:border-t-0 first:pt-0 sm:py-14"
+                className="border-t border-line py-8 first:border-t-0 first:pt-0 last:pb-0 sm:py-10"
               >
                 <Reveal y={36}>
                   <header className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">

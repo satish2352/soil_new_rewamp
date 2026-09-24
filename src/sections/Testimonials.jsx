@@ -130,7 +130,7 @@ export default function Testimonials() {
               />
 
               <blockquote lang={current.language}>
-                <p className="display max-w-4xl text-fluid-2xl font-normal leading-[1.35] text-deep wrap-anywhere">
+                <p className="display max-w-4xl text-fluid-xl font-normal leading-[1.35] text-deep wrap-anywhere">
                   {current.quote}
                 </p>
               </blockquote>
