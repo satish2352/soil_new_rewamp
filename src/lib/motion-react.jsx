@@ -166,7 +166,8 @@ export function TextReveal({
   return (
     <As className={className} {...rest}>
       <span className="sr-only">{text}</span>
-      <span aria-hidden="true">
+      {/* Unselectable, so copying the heading yields the sr-only text once rather than twice. */}
+      <span aria-hidden="true" className="select-none">
         {words.map((word, i) => (
           <Fragment key={`${word}-${i}`}>
             <span className="reveal-clip inline-block align-bottom">
@@ -382,7 +383,8 @@ export function CharReveal({
   return (
     <As className={className} {...rest}>
       <span className="sr-only">{text}</span>
-      <span aria-hidden="true">
+      {/* Unselectable, so copying the heading yields the sr-only text once rather than twice. */}
+      <span aria-hidden="true" className="select-none">
         {words.map((word, w) => (
           <Fragment key={`${word}-${w}`}>
             {/*

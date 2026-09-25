@@ -124,68 +124,121 @@ export function ArticleCard({ post, index = 0, featured = false }) {
   );
 }
 
+const langLabel = (lang) => (lang === 'mr' ? 'मराठी' : 'EN');
+
 /**
- * One article as a row: index, title, language tag, arrow.
+ * Homepage lead story: image on top, copy below, on the band's own dark
+ * surface.
+ *
+ * This used to reuse the light `ArticleCard` as a pale island in the dark band,
+ * which read as a different section pasted in. The cover images also carry
+ * their own baked-in lettering ("GRAPE FARMING"), so the copy sits under the
+ * image rather than over it, where the two would fight.
+ */
+function FeaturedTile({ post }) {
+  const { t } = useI18n();
+
+  return (
+    <Reveal
+      as="article"
+      className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-line
+                 bg-[rgb(var(--c-surface))] shadow-soft transition-all duration-500 ease-organic
+                 hover:border-sun/40 hover:shadow-cine"
+    >
+      <ImageReveal className="relative aspect-[16/9] lg:aspect-auto lg:min-h-[18rem] lg:flex-1" from="left">
+        <SmartImage
+          src={post.image}
+          alt=""
+          ratio="auto"
+          className="!h-full"
+          imgClassName="transition-transform duration-[900ms] ease-organic group-hover:scale-[1.04]"
+        />
+        <span className="absolute left-5 top-5 rounded-full bg-sun px-3.5 py-1.5 text-fluid-xs font-semibold text-deep shadow-soft">
+          {t('blog.featured')}
+        </span>
+      </ImageReveal>
+
+      <div className="flex flex-col p-7 sm:p-9">
+        <span aria-hidden="true" className="micro mb-3 text-muted">
+          {langLabel(post.language)}
+        </span>
+        <h3
+          lang={post.language}
+          className="display text-fluid-2xl font-semibold leading-snug wrap-anywhere
+                     transition-colors duration-slow group-hover:text-sun"
+        >
+          <Link to={`/blogs/${post.id}`} className="after:absolute after:inset-0">
+            {post.title}
+          </Link>
+        </h3>
+        {post.excerpt && (
+          <p lang={post.language} className="mt-3 line-clamp-3 text-fluid-base leading-relaxed text-muted wrap-anywhere">
+            {post.excerpt}
+          </p>
+        )}
+        <span className="mt-6 inline-flex items-center gap-2 text-fluid-sm font-semibold text-sun">
+          {t('cta.readMore')}
+          <Icon name="arrowRight" size={17} className="transition-transform duration-300 group-hover:translate-x-2" />
+        </span>
+      </div>
+    </Reveal>
+  );
+}
+
+/**
+ * One article as a compact row: thumbnail, title, a line of excerpt, language.
  *
  * The homepage uses these rather than a third grid of cards. By that point the
  * page has already shown product cards and career cards, and a third set would
- * read as the same component with different text in it. A hairline list also
- * fits six headlines in the height two rows of cards would need, which matters
- * when the titles are the content.
+ * read as the same component with different text in it. The thumbnail keeps the
+ * list from being a wall of text beside the lead story.
  */
 function ArticleRow({ post, index }) {
   const { t } = useI18n();
 
   return (
-    <Reveal
-      as="li"
-      delay={Math.min(index, 6) * 0.05}
-      className="group relative border-t border-line last:border-b"
-    >
+    <Reveal as="li" delay={Math.min(index, 6) * 0.06} className="group relative">
       <Link
         to={`/blogs/${post.id}`}
-        className="flex items-center gap-5 py-6 transition-transform duration-slow ease-organic
-                   motion-safe:group-hover:translate-x-2 sm:gap-8"
+        className="flex items-center gap-4 rounded-2xl border border-transparent p-3 transition-all
+                   duration-slow ease-organic hover:border-line hover:bg-[rgb(var(--c-surface))] sm:gap-5"
       >
-        <span aria-hidden="true" className="micro shrink-0 text-muted">
-          {String(index + 1).padStart(2, '0')}
+        <span className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl sm:h-24 sm:w-32">
+          <SmartImage
+            src={post.image}
+            alt=""
+            ratio="auto"
+            className="!h-full"
+            imgClassName="transition-transform duration-[900ms] ease-organic group-hover:scale-[1.08]"
+          />
         </span>
 
         <span className="min-w-0 grow">
+          <span aria-hidden="true" className="micro mb-1 block text-muted">
+            {String(index + 1).padStart(2, '0')} · {langLabel(post.language)}
+          </span>
+          {/*
+            No `block` alongside `line-clamp-*`: the clamp works by switching
+            the element to `-webkit-box`, and a `display` utility next to it
+            wins the cascade and silently turns the clamp off.
+          */}
           <span
             lang={post.language}
-            className="block font-display text-fluid-lg font-semibold leading-snug text-cream
+            className="line-clamp-2 font-display text-fluid-lg font-semibold leading-snug text-cream
                        transition-colors duration-slow group-hover:text-sun wrap-anywhere"
           >
             {post.title}
           </span>
-          {/*
-            No `block` alongside `line-clamp-1`: the clamp works by switching
-            the element to `-webkit-box`, and a `display` utility next to it
-            wins the cascade and silently turns the clamp off — the row then
-            ran to two lines and the rows stopped sharing a height.
-          */}
-          <span
-            lang={post.language}
-            className="mt-1.5 line-clamp-1 text-fluid-sm text-muted wrap-anywhere"
-          >
+          <span lang={post.language} className="mt-1 line-clamp-1 text-fluid-sm text-muted wrap-anywhere">
             {post.excerpt}
           </span>
         </span>
 
-        <span
-          aria-hidden="true"
-          className="hidden shrink-0 rounded-full border border-line px-3 py-1 text-fluid-xs
-                     font-semibold uppercase tracking-wide text-muted sm:inline-block"
-        >
-          {post.language === 'mr' ? 'मराठी' : 'EN'}
-        </span>
-
         <Icon
-          name="arrowRight"
+          name="arrowUpRight"
           size={18}
-          className="shrink-0 text-muted transition-all duration-slow ease-organic
-                     group-hover:translate-x-1.5 group-hover:text-sun"
+          className="hidden shrink-0 text-muted transition-all duration-slow ease-organic
+                     group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-sun sm:block"
         />
         <span className="sr-only">{t('cta.readMore')}</span>
       </Link>
@@ -241,7 +294,7 @@ export default function Articles({ limit, showFilter = false, heading = true, la
               exactly the kind of invented claim the content rule rules out.
               This says only what is true of the catalogue.
             */
-            title="Notes from the field"
+            title={t('blog.homeTitle')}
             action={
               limit && blogs.length > limit ? (
                 <Link to="/blogs" className="btn-ghost btn-sweep hover:text-deep">
@@ -295,21 +348,21 @@ export default function Articles({ limit, showFilter = false, heading = true, la
         {shown.length === 0 ? (
           <p className="mt-12 text-fluid-base text-muted">{t('blog.noResults')}</p>
         ) : mode === 'list' ? (
-          <>
+          <div className="mt-12 grid gap-8 lg:grid-cols-12 lg:gap-10">
             {featured && (
-              <div className="mt-12 band-light">
-                <ArticleCard post={featured} featured />
+              <div className={rest.length ? 'lg:col-span-7' : 'lg:col-span-12'}>
+                <FeaturedTile post={featured} />
               </div>
             )}
 
             {rest.length > 0 && (
-              <ul className="mt-12">
+              <ul className="-mx-3 flex flex-col justify-between gap-2 lg:col-span-5">
                 {rest.map((post, i) => (
                   <ArticleRow key={post.id} post={post} index={i} />
                 ))}
               </ul>
             )}
-          </>
+          </div>
         ) : (
           <>
             {featured && (
